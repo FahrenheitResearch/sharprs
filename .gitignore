@@ -1,0 +1,6 @@
+target/
+*.png
+*.csv
+tests/soundings/
+docs/
+Cargo.lock
