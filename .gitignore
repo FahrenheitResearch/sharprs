@@ -1,6 +1,7 @@
 target/
-*.png
 *.csv
 tests/soundings/
 docs/
 Cargo.lock
+# Allow example images
+!examples/*.png
