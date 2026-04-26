@@ -8,7 +8,7 @@
 //! The integration uses the same trapezoidal rule in height-space that
 //! SHARPpy uses (with virtual temperature corrections throughout).
 
-use crate::constants::{G, ROCP, ZEROCNK, EPSILON};
+use crate::constants::{EPSILON, G, ROCP, ZEROCNK};
 
 // =========================================================================
 // Thermo primitives (self-contained so this module has no thermo dep yet)
@@ -65,9 +65,7 @@ fn temp_at_mixrat(w: f64, p: f64) -> f64 {
     const C5: f64 = 0.0915;
     const C6: f64 = 1.2035;
     let x = (w * p / (622.0 + w)).log10();
-    (10.0_f64.powf(C1 * x + C2) - C3
-        + C4 * (10.0_f64.powf(C5 * x) - C6).powi(2))
-        - ZEROCNK
+    (10.0_f64.powf(C1 * x + C2) - C3 + C4 * (10.0_f64.powf(C5 * x) - C6).powi(2)) - ZEROCNK
 }
 
 /// Virtual temperature (C).
@@ -92,15 +90,13 @@ fn wobf(t: f64) -> f64 {
         let npol = 1.0
             + t * (-8.841660499999999e-3
                 + t * (1.4714143e-4
-                    + t * (-9.671989000000001e-7
-                        + t * (-3.2607217e-8 + t * (-3.8598073e-10)))));
+                    + t * (-9.671989000000001e-7 + t * (-3.2607217e-8 + t * (-3.8598073e-10)))));
         15.13 / npol.powi(4)
     } else {
         let ppol = t
             * (4.9618922e-07
                 + t * (-6.1059365e-09
-                    + t * (3.9401551e-11
-                        + t * (-1.2588129e-13 + t * 1.6688280e-16))));
+                    + t * (3.9401551e-11 + t * (-1.2588129e-13 + t * 1.6688280e-16))));
         let ppol = 1.0 + t * (3.6182989e-03 + t * (-1.3603273e-05 + ppol));
         29.93 / ppol.powi(4) + 0.96 * t - 14.8
     }
@@ -220,13 +216,7 @@ impl Profile {
     /// `pres`, `hght`, `tmpc`, `dwpc` must all have the same length and be
     /// sorted from surface upward (highest pressure first).  `sfc` is
     /// normally 0.  NAN values in tmpc/dwpc mark missing levels.
-    pub fn new(
-        pres: Vec<f64>,
-        hght: Vec<f64>,
-        tmpc: Vec<f64>,
-        dwpc: Vec<f64>,
-        sfc: usize,
-    ) -> Self {
+    pub fn new(pres: Vec<f64>, hght: Vec<f64>, tmpc: Vec<f64>, dwpc: Vec<f64>, sfc: usize) -> Self {
         let n = pres.len();
         assert_eq!(n, hght.len());
         assert_eq!(n, tmpc.len());
@@ -490,11 +480,7 @@ pub enum ParcelType {
     /// flag=4: Mixed-layer parcel (mean theta/mixratio in lowest `depth_hpa`).
     MixedLayer { depth_hpa: f64 },
     /// flag=5: User-defined parcel.
-    UserDefined {
-        pres: f64,
-        tmpc: f64,
-        dwpc: f64,
-    },
+    UserDefined { pres: f64, tmpc: f64, dwpc: f64 },
 }
 
 /// Lifted Parcel Layer values — the starting conditions for a lifted parcel.
@@ -830,11 +816,7 @@ pub fn cape(
             } else {
                 env_theta
             };
-            let pcl_t = virtemp(
-                p,
-                theta_parcel,
-                temp_at_mixrat(blmr, p),
-            );
+            let pcl_t = virtemp(p, theta_parcel, temp_at_mixrat(blmr, p));
             let tdef = (pcl_t - tv_env) / ctok(tv_env);
 
             if !prev_tdef.is_nan() && !prev_h.is_nan() && !h.is_nan() {
@@ -1712,9 +1694,7 @@ pub fn effective_inflow_layer(
                 let pcl2 = cape(prof, &lpl2, None, None);
                 if pcl2.bplus < ecape || pcl2.bminus <= ecinh {
                     let mut k = j - 1;
-                    while k > i
-                        && (prof.tmpc[k].is_nan() || prof.dwpc[k].is_nan())
-                    {
+                    while k > i && (prof.tmpc[k].is_nan() || prof.dwpc[k].is_nan()) {
                         k -= 1;
                     }
                     ptop = prof.pres[k];
@@ -1745,30 +1725,26 @@ mod tests {
     /// surface at 1000 hPa, top near 100 hPa.
     fn make_test_profile() -> Profile {
         let pres: Vec<f64> = vec![
-            1000.0, 975.0, 950.0, 925.0, 900.0, 875.0, 850.0, 825.0, 800.0,
-            775.0, 750.0, 725.0, 700.0, 675.0, 650.0, 625.0, 600.0, 575.0,
-            550.0, 525.0, 500.0, 475.0, 450.0, 425.0, 400.0, 375.0, 350.0,
-            325.0, 300.0, 275.0, 250.0, 225.0, 200.0, 175.0, 150.0, 125.0,
+            1000.0, 975.0, 950.0, 925.0, 900.0, 875.0, 850.0, 825.0, 800.0, 775.0, 750.0, 725.0,
+            700.0, 675.0, 650.0, 625.0, 600.0, 575.0, 550.0, 525.0, 500.0, 475.0, 450.0, 425.0,
+            400.0, 375.0, 350.0, 325.0, 300.0, 275.0, 250.0, 225.0, 200.0, 175.0, 150.0, 125.0,
             100.0,
         ];
         let hght: Vec<f64> = vec![
-            110.0, 330.0, 554.0, 782.0, 1014.0, 1251.0, 1494.0, 1743.0,
-            1999.0, 2262.0, 2533.0, 2813.0, 3103.0, 3404.0, 3717.0, 4044.0,
-            4387.0, 4747.0, 5127.0, 5530.0, 5960.0, 6420.0, 6915.0, 7450.0,
-            8032.0, 8670.0, 9374.0, 10154.0, 11024.0, 12000.0, 13105.0,
-            14370.0, 15834.0, 17555.0, 19620.0, 22140.0, 25350.0,
+            110.0, 330.0, 554.0, 782.0, 1014.0, 1251.0, 1494.0, 1743.0, 1999.0, 2262.0, 2533.0,
+            2813.0, 3103.0, 3404.0, 3717.0, 4044.0, 4387.0, 4747.0, 5127.0, 5530.0, 5960.0, 6420.0,
+            6915.0, 7450.0, 8032.0, 8670.0, 9374.0, 10154.0, 11024.0, 12000.0, 13105.0, 14370.0,
+            15834.0, 17555.0, 19620.0, 22140.0, 25350.0,
         ];
         let tmpc: Vec<f64> = vec![
-            30.0, 27.0, 24.0, 21.0, 18.0, 15.0, 12.0, 9.0, 6.5, 4.0, 1.5,
-            -1.0, -3.5, -6.0, -9.0, -12.0, -15.0, -18.5, -22.0, -26.0,
-            -30.0, -34.0, -38.5, -43.0, -48.0, -53.0, -58.0, -63.5, -69.0,
-            -70.0, -68.0, -66.0, -64.0, -62.0, -58.0, -52.0, -45.0,
+            30.0, 27.0, 24.0, 21.0, 18.0, 15.0, 12.0, 9.0, 6.5, 4.0, 1.5, -1.0, -3.5, -6.0, -9.0,
+            -12.0, -15.0, -18.5, -22.0, -26.0, -30.0, -34.0, -38.5, -43.0, -48.0, -53.0, -58.0,
+            -63.5, -69.0, -70.0, -68.0, -66.0, -64.0, -62.0, -58.0, -52.0, -45.0,
         ];
         let dwpc: Vec<f64> = vec![
-            22.0, 21.0, 20.0, 18.0, 16.0, 13.0, 10.0, 6.0, 2.0, -2.0, -6.0,
-            -10.0, -14.0, -18.0, -22.0, -26.0, -30.0, -34.0, -38.0, -42.0,
-            -46.0, -50.0, -54.0, -58.0, -62.0, -66.0, -70.0, -74.0, -78.0,
-            -78.0, -76.0, -74.0, -72.0, -70.0, -66.0, -60.0, -55.0,
+            22.0, 21.0, 20.0, 18.0, 16.0, 13.0, 10.0, 6.0, 2.0, -2.0, -6.0, -10.0, -14.0, -18.0,
+            -22.0, -26.0, -30.0, -34.0, -38.0, -42.0, -46.0, -50.0, -54.0, -58.0, -62.0, -66.0,
+            -70.0, -74.0, -78.0, -78.0, -76.0, -74.0, -72.0, -70.0, -66.0, -60.0, -55.0,
         ];
         Profile::new(pres, hght, tmpc, dwpc, 0)
     }
@@ -1809,10 +1785,7 @@ mod tests {
     #[test]
     fn test_virtemp_warmer() {
         let vt = virtemp(1000.0, 20.0, 15.0);
-        assert!(
-            vt >= 20.0,
-            "Virtual temp {vt} should be >= dry temp 20.0"
-        );
+        assert!(vt >= 20.0, "Virtual temp {vt} should be >= dry temp 20.0");
     }
 
     #[test]
@@ -1826,14 +1799,8 @@ mod tests {
             "CAPE should be positive, got {}",
             pcl.bplus
         );
-        assert!(
-            !pcl.lclpres.is_nan(),
-            "LCL pressure should not be NAN"
-        );
-        assert!(
-            pcl.lclhght > 0.0,
-            "LCL height should be positive"
-        );
+        assert!(!pcl.lclpres.is_nan(), "LCL pressure should not be NAN");
+        assert!(pcl.lclhght > 0.0, "LCL height should be positive");
     }
 
     #[test]
@@ -1928,13 +1895,20 @@ mod tests {
         let pres = vec![1000.0, 500.0];
         let field = vec![0.0, 100.0];
         let val = interp_pres(750.0, &pres, &field);
-        assert!(val > 0.0 && val < 100.0, "Interpolated value {val} out of range");
+        assert!(
+            val > 0.0 && val < 100.0,
+            "Interpolated value {val} out of range"
+        );
     }
 
     #[test]
     fn test_stable_profile_no_cape() {
-        let pres: Vec<f64> = vec![1000.0, 900.0, 800.0, 700.0, 600.0, 500.0, 400.0, 300.0, 200.0];
-        let hght: Vec<f64> = vec![100.0, 1000.0, 2000.0, 3100.0, 4300.0, 5600.0, 7200.0, 9200.0, 11800.0];
+        let pres: Vec<f64> = vec![
+            1000.0, 900.0, 800.0, 700.0, 600.0, 500.0, 400.0, 300.0, 200.0,
+        ];
+        let hght: Vec<f64> = vec![
+            100.0, 1000.0, 2000.0, 3100.0, 4300.0, 5600.0, 7200.0, 9200.0, 11800.0,
+        ];
         let tmpc: Vec<f64> = vec![10.0, 15.0, 10.0, 5.0, -5.0, -15.0, -30.0, -45.0, -60.0];
         let dwpc: Vec<f64> = vec![5.0, -5.0, -15.0, -25.0, -35.0, -45.0, -55.0, -65.0, -75.0];
         let prof = Profile::new(pres, hght, tmpc, dwpc, 0);

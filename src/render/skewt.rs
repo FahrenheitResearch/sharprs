@@ -27,12 +27,10 @@
 //! 19. Wet-bulb temperature trace (cyan, thin)
 //! 20. DCAPE downdraft trace (magenta dashed)
 
-use crate::profile::Profile;
-use crate::params::cape::{
-    self, ParcelResult, ParcelType, DcapeResult,
-};
-use crate::render::canvas::{Canvas, FONT_H, FONT_W};
 use crate::constants::*;
+use crate::params::cape::{self, DcapeResult, ParcelResult, ParcelType};
+use crate::profile::Profile;
+use crate::render::canvas::{Canvas, FONT_H};
 
 // =========================================================================
 // Layout constants
@@ -60,14 +58,11 @@ const SKEW: f64 = 1.0;
 
 // Standard pressure levels for isobars
 const STD_PRESSURES: &[f64] = &[
-    1000.0, 925.0, 850.0, 700.0, 500.0, 400.0, 300.0, 250.0, 200.0, 150.0,
-    100.0,
+    1000.0, 925.0, 850.0, 700.0, 500.0, 400.0, 300.0, 250.0, 200.0, 150.0, 100.0,
 ];
 
 // Labeled pressure levels (the most important ones get labels)
-const LABELED_PRESSURES: &[f64] = &[
-    1000.0, 850.0, 700.0, 500.0, 300.0, 200.0, 100.0,
-];
+const LABELED_PRESSURES: &[f64] = &[1000.0, 850.0, 700.0, 500.0, 300.0, 200.0, 100.0];
 
 // =========================================================================
 // Color palette (SHARPpy-inspired dark background) — BRIGHTER
@@ -248,32 +243,65 @@ struct SkewTParams {
     eff_inflow_top: f64,
 }
 
-fn compute_skewt_params(
-    prof: &Profile,
-    cape_prof: &cape::Profile,
-) -> SkewTParams {
+fn compute_skewt_params(prof: &Profile, cape_prof: &cape::Profile) -> SkewTParams {
     let mut params = SkewTParams::default();
 
     // Surface-based parcel
     let sb_lpl = cape::define_parcel(cape_prof, ParcelType::Surface);
     let sb_pcl = cape::parcelx(cape_prof, &sb_lpl, None, None);
-    params.sb_cape = if sb_pcl.bplus.is_nan() { 0.0 } else { sb_pcl.bplus };
-    params.sb_cin = if sb_pcl.bminus.is_nan() { 0.0 } else { sb_pcl.bminus };
-    params.lcl_hgt = if sb_pcl.lclhght.is_nan() { 0.0 } else { sb_pcl.lclhght };
-    params.lfc_hgt = if sb_pcl.lfchght.is_nan() { 0.0 } else { sb_pcl.lfchght };
-    params.el_hgt = if sb_pcl.elhght.is_nan() { 0.0 } else { sb_pcl.elhght };
+    params.sb_cape = if sb_pcl.bplus.is_nan() {
+        0.0
+    } else {
+        sb_pcl.bplus
+    };
+    params.sb_cin = if sb_pcl.bminus.is_nan() {
+        0.0
+    } else {
+        sb_pcl.bminus
+    };
+    params.lcl_hgt = if sb_pcl.lclhght.is_nan() {
+        0.0
+    } else {
+        sb_pcl.lclhght
+    };
+    params.lfc_hgt = if sb_pcl.lfchght.is_nan() {
+        0.0
+    } else {
+        sb_pcl.lfchght
+    };
+    params.el_hgt = if sb_pcl.elhght.is_nan() {
+        0.0
+    } else {
+        sb_pcl.elhght
+    };
 
     // Mixed-layer parcel (100 hPa depth)
     let ml_lpl = cape::define_parcel(cape_prof, ParcelType::MixedLayer { depth_hpa: 100.0 });
     let ml_pcl = cape::parcelx(cape_prof, &ml_lpl, None, None);
-    params.ml_cape = if ml_pcl.bplus.is_nan() { 0.0 } else { ml_pcl.bplus };
-    params.ml_cin = if ml_pcl.bminus.is_nan() { 0.0 } else { ml_pcl.bminus };
+    params.ml_cape = if ml_pcl.bplus.is_nan() {
+        0.0
+    } else {
+        ml_pcl.bplus
+    };
+    params.ml_cin = if ml_pcl.bminus.is_nan() {
+        0.0
+    } else {
+        ml_pcl.bminus
+    };
 
     // Most-unstable parcel (300 hPa depth)
     let mu_lpl = cape::define_parcel(cape_prof, ParcelType::MostUnstable { depth_hpa: 300.0 });
     let mu_pcl = cape::parcelx(cape_prof, &mu_lpl, None, None);
-    params.mu_cape = if mu_pcl.bplus.is_nan() { 0.0 } else { mu_pcl.bplus };
-    params.mu_cin = if mu_pcl.bminus.is_nan() { 0.0 } else { mu_pcl.bminus };
+    params.mu_cape = if mu_pcl.bplus.is_nan() {
+        0.0
+    } else {
+        mu_pcl.bplus
+    };
+    params.mu_cin = if mu_pcl.bminus.is_nan() {
+        0.0
+    } else {
+        mu_pcl.bminus
+    };
 
     // DCAPE
     let dcape_res = cape::dcape(cape_prof);
@@ -361,7 +389,10 @@ fn compute_skewt_params(
     let t_500 = prof.interp_tmpc(500.0);
     let td_850 = prof.interp_dwpc(850.0);
     let td_700 = prof.interp_dwpc(700.0);
-    if [t_850, t_700, t_500, td_850, td_700].iter().all(|v| v.is_finite()) {
+    if [t_850, t_700, t_500, td_850, td_700]
+        .iter()
+        .all(|v| v.is_finite())
+    {
         params.k_index = (t_850 - t_500) + td_850 - (t_700 - td_700);
     }
 
@@ -437,29 +468,12 @@ fn draw_text_with_bg(
 
 /// Draw text at 2x scale (each pixel of the 7x10 font becomes a 2x2 block).
 fn draw_text_2x(c: &mut Canvas, text: &str, px: i32, py: i32, col: [u8; 4]) {
-    let mut x = px;
-    for ch in text.chars() {
-        let bitmap = crate::render::canvas::char_bitmap(ch);
-        for (row, &bits) in bitmap.iter().enumerate() {
-            for col_idx in 0..FONT_W {
-                if bits & (1 << (FONT_W - 1 - col_idx)) != 0 {
-                    let bx = x + col_idx * 2;
-                    let by = py + row as i32 * 2;
-                    c.put_pixel_blend(bx, by, col);
-                    c.put_pixel_blend(bx + 1, by, col);
-                    c.put_pixel_blend(bx, by + 1, col);
-                    c.put_pixel_blend(bx + 1, by + 1, col);
-                }
-            }
-        }
-        x += (FONT_W + 1) * 2;
-    }
+    c.draw_text_scaled(text, px, py, col, 2);
 }
 
 /// Width of 2x-scale text.
 fn text_width_2x(text: &str) -> i32 {
-    let n = text.len() as i32;
-    if n == 0 { 0 } else { n * (FONT_W + 1) * 2 - 2 }
+    Canvas::text_width_scaled(text, 2)
 }
 
 /// Draw text with a dark background box at 2x scale.
@@ -553,12 +567,6 @@ pub fn render_skewt(prof: &Profile, width: u32, height: u32) -> Vec<u8> {
     draw_level_labels(&mut c, &params, &cape_prof, plot_w, plot_h);
 
     // ── Title ───────────────────────────────────────────────────────
-    let title = format!(
-        "{}  {}",
-        prof.station.station_id, prof.station.datetime
-    );
-    c.draw_text(&title.to_uppercase(), MARGIN_LEFT as i32, 4, COL_TEXT);
-
     // ── Right panel: hodograph ──────────────────────────────────────
     let hodo_h = (height as i32) / 2;
     draw_hodograph(&mut c, prof, &params, right_x, 0, right_w as i32, hodo_h);
@@ -767,13 +775,7 @@ fn draw_wetbulb_trace(c: &mut Canvas, prof: &Profile, plot_w: f64, plot_h: f64) 
     }
 }
 
-fn draw_parcel_trace(
-    c: &mut Canvas,
-    pcl: &ParcelResult,
-    col: [u8; 4],
-    plot_w: f64,
-    plot_h: f64,
-) {
+fn draw_parcel_trace(c: &mut Canvas, pcl: &ParcelResult, col: [u8; 4], plot_w: f64, plot_h: f64) {
     if pcl.ptrace.len() < 2 || pcl.ttrace.len() < 2 {
         return;
     }
@@ -797,12 +799,7 @@ fn draw_parcel_trace(
     }
 }
 
-fn draw_dcape_trace(
-    c: &mut Canvas,
-    dcape: &DcapeResult,
-    plot_w: f64,
-    plot_h: f64,
-) {
+fn draw_dcape_trace(c: &mut Canvas, dcape: &DcapeResult, plot_w: f64, plot_h: f64) {
     if dcape.ptrace.len() < 2 || dcape.ttrace.len() < 2 {
         return;
     }
@@ -868,18 +865,11 @@ fn draw_cape_cin_fills(
 
 // ── Wind barbs ──────────────────────────────────────────────────────────
 
-fn draw_wind_barbs(
-    c: &mut Canvas,
-    prof: &Profile,
-    plot_w: f64,
-    plot_h: f64,
-    skewt_w: u32,
-) {
+fn draw_wind_barbs(c: &mut Canvas, prof: &Profile, plot_w: f64, plot_h: f64, skewt_w: u32) {
     let bx = (skewt_w as f64 - MARGIN_RIGHT / 2.0) as f64;
     let barb_pressures = [
-        1000.0, 975.0, 950.0, 925.0, 900.0, 875.0, 850.0, 825.0, 800.0,
-        775.0, 750.0, 700.0, 650.0, 600.0, 550.0, 500.0, 450.0, 400.0,
-        350.0, 300.0, 250.0, 200.0, 150.0,
+        1000.0, 975.0, 950.0, 925.0, 900.0, 875.0, 850.0, 825.0, 800.0, 775.0, 750.0, 700.0, 650.0,
+        600.0, 550.0, 500.0, 450.0, 400.0, 350.0, 300.0, 250.0, 200.0, 150.0,
     ];
 
     for &p in &barb_pressures {
@@ -977,12 +967,7 @@ fn draw_height_markers(c: &mut Canvas, prof: &Profile, plot_w: f64, plot_h: f64)
 
 // ── Effective inflow layer bracket ──────────────────────────────────────
 
-fn draw_effective_inflow_bracket(
-    c: &mut Canvas,
-    params: &SkewTParams,
-    plot_w: f64,
-    plot_h: f64,
-) {
+fn draw_effective_inflow_bracket(c: &mut Canvas, params: &SkewTParams, plot_w: f64, plot_h: f64) {
     let pbot = params.eff_inflow_bot;
     let ptop = params.eff_inflow_top;
     if !pbot.is_finite() || !ptop.is_finite() {
@@ -1001,14 +986,34 @@ fn draw_effective_inflow_bracket(
 
     // Thick horizontal ticks at top and bottom
     for dy in -1..=1 {
-        c.draw_line(bx - 5, y_bot as i32 + dy, bx + 6, y_bot as i32 + dy, COL_EFF_INFLOW);
-        c.draw_line(bx - 5, y_top as i32 + dy, bx + 6, y_top as i32 + dy, COL_EFF_INFLOW);
+        c.draw_line(
+            bx - 5,
+            y_bot as i32 + dy,
+            bx + 6,
+            y_bot as i32 + dy,
+            COL_EFF_INFLOW,
+        );
+        c.draw_line(
+            bx - 5,
+            y_top as i32 + dy,
+            bx + 6,
+            y_top as i32 + dy,
+            COL_EFF_INFLOW,
+        );
     }
 
     // Label with background box
     let label = "EFF";
     let mid_y = (y_top as i32 + y_bot as i32) / 2;
-    draw_text_with_bg(c, label, bx + 8, mid_y - FONT_H / 2, COL_EFF_INFLOW, COL_LABEL_BG, 2);
+    draw_text_with_bg(
+        c,
+        label,
+        bx + 8,
+        mid_y - FONT_H / 2,
+        COL_EFF_INFLOW,
+        COL_LABEL_BG,
+        2,
+    );
 }
 
 // ── Surface temperature labels in Fahrenheit ─────────────────────────
@@ -1045,7 +1050,13 @@ fn draw_sfc_temp_label(c: &mut Canvas, prof: &Profile, plot_w: f64, plot_h: f64)
         let label_wb = format!("{:.0}F", wb_f);
         let (xwb, _) = tp_to_screen(wb_sfc, prof.pres[prof.sfc], plot_w, plot_h);
         let tw_wb = text_width_2x(&label_wb);
-        draw_text_2x(c, &label_wb, xwb as i32 - tw_wb / 2, y_bot + FONT_H * 2 + 2, COL_WETBULB);
+        draw_text_2x(
+            c,
+            &label_wb,
+            xwb as i32 - tw_wb / 2,
+            y_bot + FONT_H * 2 + 2,
+            COL_WETBULB,
+        );
     }
 }
 
@@ -1070,11 +1081,22 @@ fn draw_level_labels(
     if sb_pcl.lclpres.is_finite() && sb_pcl.lclpres > P_TOP && sb_pcl.lclpres < P_BOT {
         let (_, y) = tp_to_screen(0.0, sb_pcl.lclpres, plot_w, plot_h);
         draw_text_with_bg_2x(
-            c, "LCL", label_x, y as i32 - FONT_H, COL_LCL_LABEL, COL_LABEL_BG, 3,
+            c,
+            "LCL",
+            label_x,
+            y as i32 - FONT_H,
+            COL_LCL_LABEL,
+            COL_LABEL_BG,
+            3,
         );
         // Horizontal dash at the level
         c.draw_thick_line_aa(
-            MARGIN_LEFT + 2.0, y, MARGIN_LEFT + 12.0, y, COL_LCL_LABEL, 2,
+            MARGIN_LEFT + 2.0,
+            y,
+            MARGIN_LEFT + 12.0,
+            y,
+            COL_LCL_LABEL,
+            2,
         );
     }
 
@@ -1082,10 +1104,21 @@ fn draw_level_labels(
     if sb_pcl.lfcpres.is_finite() && sb_pcl.lfcpres > P_TOP && sb_pcl.lfcpres < P_BOT {
         let (_, y) = tp_to_screen(0.0, sb_pcl.lfcpres, plot_w, plot_h);
         draw_text_with_bg_2x(
-            c, "LFC", label_x, y as i32 - FONT_H, COL_LFC_LABEL, COL_LABEL_BG, 3,
+            c,
+            "LFC",
+            label_x,
+            y as i32 - FONT_H,
+            COL_LFC_LABEL,
+            COL_LABEL_BG,
+            3,
         );
         c.draw_thick_line_aa(
-            MARGIN_LEFT + 2.0, y, MARGIN_LEFT + 12.0, y, COL_LFC_LABEL, 2,
+            MARGIN_LEFT + 2.0,
+            y,
+            MARGIN_LEFT + 12.0,
+            y,
+            COL_LFC_LABEL,
+            2,
         );
     }
 
@@ -1093,11 +1126,15 @@ fn draw_level_labels(
     if sb_pcl.elpres.is_finite() && sb_pcl.elpres > P_TOP && sb_pcl.elpres < P_BOT {
         let (_, y) = tp_to_screen(0.0, sb_pcl.elpres, plot_w, plot_h);
         draw_text_with_bg_2x(
-            c, "EL", label_x, y as i32 - FONT_H, COL_EL_LABEL, COL_LABEL_BG, 3,
+            c,
+            "EL",
+            label_x,
+            y as i32 - FONT_H,
+            COL_EL_LABEL,
+            COL_LABEL_BG,
+            3,
         );
-        c.draw_thick_line_aa(
-            MARGIN_LEFT + 2.0, y, MARGIN_LEFT + 12.0, y, COL_EL_LABEL, 2,
-        );
+        c.draw_thick_line_aa(MARGIN_LEFT + 2.0, y, MARGIN_LEFT + 12.0, y, COL_EL_LABEL, 2);
     }
 }
 
@@ -1141,9 +1178,8 @@ fn draw_hodograph(
 
     let sfc_h = prof.hght[prof.sfc];
 
-    let uv_to_screen = |u: f64, v: f64| -> (i32, i32) {
-        (cx + (u * scale) as i32, cy - (v * scale) as i32)
-    };
+    let uv_to_screen =
+        |u: f64, v: f64| -> (i32, i32) { (cx + (u * scale) as i32, cy - (v * scale) as i32) };
 
     let height_color = |h_agl: f64| -> [u8; 4] {
         if h_agl < 3000.0 {
@@ -1223,14 +1259,7 @@ fn draw_hodograph(
 
 // ── Text parameter panel ────────────────────────────────────────────────
 
-fn draw_text_panel(
-    c: &mut Canvas,
-    params: &SkewTParams,
-    rx: i32,
-    ry: i32,
-    rw: i32,
-    rh: i32,
-) {
+fn draw_text_panel(c: &mut Canvas, params: &SkewTParams, rx: i32, ry: i32, rw: i32, rh: i32) {
     c.fill_rect(rx, ry, rw, rh, COL_PANEL_BG);
     c.draw_rect(rx, ry, rw, rh, COL_PANEL_BORDER);
 
@@ -1271,7 +1300,12 @@ fn draw_text_panel(
     section(c, &mut y, "LAPSE RATES");
     row(c, &mut y, "0-3 KM", &format!("{:.1} C/KM", params.lr_0_3));
     row(c, &mut y, "3-6 KM", &format!("{:.1} C/KM", params.lr_3_6));
-    row(c, &mut y, "700-500", &format!("{:.1} C/KM", params.lr_700_500));
+    row(
+        c,
+        &mut y,
+        "700-500",
+        &format!("{:.1} C/KM", params.lr_700_500),
+    );
     y += 2;
 
     // Shear
@@ -1317,41 +1351,42 @@ mod tests {
 
     fn test_profile() -> Profile {
         let pres = [
-            1000.0, 975.0, 950.0, 925.0, 900.0, 850.0, 800.0, 750.0, 700.0,
-            650.0, 600.0, 550.0, 500.0, 450.0, 400.0, 350.0, 300.0, 250.0,
-            200.0, 150.0,
+            1000.0, 975.0, 950.0, 925.0, 900.0, 850.0, 800.0, 750.0, 700.0, 650.0, 600.0, 550.0,
+            500.0, 450.0, 400.0, 350.0, 300.0, 250.0, 200.0, 150.0,
         ];
         let hght = [
-            110.0, 330.0, 554.0, 782.0, 1014.0, 1494.0, 1999.0, 2533.0,
-            3103.0, 3717.0, 4387.0, 5127.0, 5960.0, 6915.0, 8032.0, 9374.0,
-            11024.0, 13105.0, 15834.0, 19620.0,
+            110.0, 330.0, 554.0, 782.0, 1014.0, 1494.0, 1999.0, 2533.0, 3103.0, 3717.0, 4387.0,
+            5127.0, 5960.0, 6915.0, 8032.0, 9374.0, 11024.0, 13105.0, 15834.0, 19620.0,
         ];
         let tmpc = [
-            30.0, 27.0, 24.0, 21.0, 18.0, 12.0, 6.5, 1.5, -3.5, -9.0,
-            -15.0, -22.0, -30.0, -38.5, -48.0, -58.0, -69.0, -68.0, -64.0,
-            -58.0,
+            30.0, 27.0, 24.0, 21.0, 18.0, 12.0, 6.5, 1.5, -3.5, -9.0, -15.0, -22.0, -30.0, -38.5,
+            -48.0, -58.0, -69.0, -68.0, -64.0, -58.0,
         ];
         let dwpc = [
-            22.0, 21.0, 20.0, 18.0, 16.0, 10.0, 2.0, -6.0, -14.0, -22.0,
-            -30.0, -38.0, -46.0, -54.0, -62.0, -70.0, -78.0, -76.0, -72.0,
-            -66.0,
+            22.0, 21.0, 20.0, 18.0, 16.0, 10.0, 2.0, -6.0, -14.0, -22.0, -30.0, -38.0, -46.0,
+            -54.0, -62.0, -70.0, -78.0, -76.0, -72.0, -66.0,
         ];
         let wdir = [
-            180.0, 185.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0,
-            260.0, 265.0, 270.0, 270.0, 270.0, 275.0, 280.0, 285.0, 290.0,
-            280.0, 270.0,
+            180.0, 185.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 265.0, 270.0,
+            270.0, 270.0, 275.0, 280.0, 285.0, 290.0, 280.0, 270.0,
         ];
         let wspd = [
-            10.0, 12.0, 15.0, 18.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0,
-            50.0, 55.0, 60.0, 55.0, 50.0, 45.0, 40.0, 35.0, 30.0, 25.0,
+            10.0, 12.0, 15.0, 18.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 55.0,
+            50.0, 45.0, 40.0, 35.0, 30.0, 25.0,
         ];
         let omeg = [
-            0.0, -0.1, -0.2, -0.3, -0.5, -0.8, -1.0, -0.8, -0.5, -0.3,
-            -0.1, 0.0, 0.1, 0.2, 0.3, 0.2, 0.1, 0.0, 0.0, 0.0,
+            0.0, -0.1, -0.2, -0.3, -0.5, -0.8, -1.0, -0.8, -0.5, -0.3, -0.1, 0.0, 0.1, 0.2, 0.3,
+            0.2, 0.1, 0.0, 0.0, 0.0,
         ];
 
         Profile::new(
-            &pres, &hght, &tmpc, &dwpc, &wdir, &wspd, &omeg,
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &wdir,
+            &wspd,
+            &omeg,
             StationInfo {
                 station_id: "TEST".into(),
                 datetime: "2026032000".into(),

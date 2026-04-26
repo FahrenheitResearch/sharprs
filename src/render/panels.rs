@@ -65,6 +65,23 @@ const FONT_H: i32 = 10;
 #[allow(dead_code)]
 const CHAR_SPACING: i32 = 8; // FONT_W + 1
 const LINE_H: i32 = 13; // FONT_H + 3
+const TITLE_SCALE: i32 = 2;
+const TITLE_H: i32 = FONT_H * TITLE_SCALE;
+
+fn draw_panel_title(canvas: &mut Canvas, title: &str, rx: i32, ry: i32, rw: i32) -> i32 {
+    let tw = Canvas::text_width_scaled(title, TITLE_SCALE);
+    draw_text_scaled(
+        canvas,
+        title,
+        rx + (rw - tw) / 2,
+        ry + 5,
+        COL_CYAN,
+        TITLE_SCALE,
+    );
+    let sep_y = ry + TITLE_H + 10;
+    canvas.draw_line(rx + 2, sep_y, rx + rw - 2, sep_y, COL_PANEL_BORDER);
+    sep_y
+}
 
 // =========================================================================
 // 1. SARS – Sounding Analogs
@@ -140,24 +157,24 @@ pub fn draw_sars_panel(canvas: &mut Canvas, data: &SarsData, rx: i32, ry: i32, r
     // Cyan border (matching reference)
     draw_panel_border(canvas, rx, ry, rw, rh);
 
-    // Title in cyan
-    let title = "SARS - Sounding Analogs";
-    let tw = Canvas::text_width(title);
-    let title_x = rx + (rw - tw) / 2;
-    canvas.draw_text(title, title_x, ry + 5, COL_CYAN);
-
-    // Horizontal line under title
-    canvas.draw_line(rx + 2, ry + FONT_H + 9, rx + rw - 2, ry + FONT_H + 9, COL_PANEL_BORDER);
+    let sep_y = draw_panel_title(canvas, "SARS - Sounding Analogs", rx, ry, rw);
 
     // Dividing line between columns
     let mid_x = rx + rw / 2;
-    canvas.draw_line(mid_x, ry + FONT_H + 9, mid_x, ry + rh - 2, COL_PANEL_BORDER);
+    canvas.draw_line(mid_x, sep_y, mid_x, ry + rh - 2, COL_PANEL_BORDER);
 
     let col_w = rw / 2;
-    let content_y = ry + FONT_H + 14;
+    let content_y = sep_y + 8;
 
     // Draw left column: SUPERCELL
-    draw_sars_column(canvas, &data.supercell, "SUPERCELL", rx + 6, content_y, col_w - 12);
+    draw_sars_column(
+        canvas,
+        &data.supercell,
+        "SUPERCELL",
+        rx + 6,
+        content_y,
+        col_w - 12,
+    );
 
     // Draw right column: SGFNT HAIL
     draw_sars_column(
@@ -179,12 +196,10 @@ fn draw_sars_column(
     _w: i32,
 ) {
     // Column heading in white, slightly larger effect with bold
-    canvas.draw_text(heading, x, y, COL_WHITE);
-    // Bold effect: draw again offset by 1px
-    canvas.draw_text(heading, x + 1, y, COL_WHITE);
+    draw_text_scaled(canvas, heading, x, y, COL_WHITE, 2);
 
     // Match count
-    let mut cy = y + LINE_H + 2;
+    let mut cy = y + TITLE_H + 5;
     let match_text = format!("({} loose matches)", cat.loose_matches);
     canvas.draw_text(&match_text, x, cy, COL_TEXT_DIM);
     cy += LINE_H + 6;
@@ -335,20 +350,13 @@ pub fn draw_stp_box_panel(
     canvas.fill_rect(rx, ry, rw, rh, COL_PANEL_BG);
     draw_panel_border(canvas, rx, ry, rw, rh);
 
-    // Title in cyan
-    let title = "Effective Layer STP (with CIN)";
-    let tw = Canvas::text_width(title);
-    let title_x = rx + (rw - tw) / 2;
-    canvas.draw_text(title, title_x, ry + 4, COL_CYAN);
-
-    // Horizontal separator under title
-    canvas.draw_line(rx + 2, ry + FONT_H + 8, rx + rw - 2, ry + FONT_H + 8, COL_PANEL_BORDER);
+    let sep_y = draw_panel_title(canvas, "Effective Layer STP (with CIN)", rx, ry, rw);
 
     // Plot area (leave margins for axes and probability text)
     let prob_margin = if probs.is_some() { rw / 3 } else { 20 };
     let plot_left = rx + 32;
     let plot_right = rx + rw - 10 - prob_margin;
-    let plot_top = ry + FONT_H + 16;
+    let plot_top = sep_y + 8;
     let plot_bot = ry + rh - FONT_H - 12;
     let plot_w = plot_right - plot_left;
     let plot_h = plot_bot - plot_top;
@@ -438,8 +446,18 @@ pub fn draw_stp_box_panel(
 
         // Label the value with bold effect
         let val_text = format!("{:.1}", current_stp);
-        canvas.draw_text(&val_text, plot_right + 4, marker_y - FONT_H / 2, COL_STP_MARKER);
-        canvas.draw_text(&val_text, plot_right + 5, marker_y - FONT_H / 2, COL_STP_MARKER);
+        canvas.draw_text(
+            &val_text,
+            plot_right + 4,
+            marker_y - FONT_H / 2,
+            COL_STP_MARKER,
+        );
+        canvas.draw_text(
+            &val_text,
+            plot_right + 5,
+            marker_y - FONT_H / 2,
+            COL_STP_MARKER,
+        );
     }
 
     // Probability text on the right side
@@ -517,13 +535,7 @@ pub fn draw_storm_slinky(
     canvas.fill_rect(rx, ry, rw, rh, COL_PANEL_BG);
     draw_panel_border(canvas, rx, ry, rw, rh);
 
-    // Title in cyan
-    let title = "Storm Slinky";
-    let tw = Canvas::text_width(title);
-    canvas.draw_text(title, rx + (rw - tw) / 2, ry + 5, COL_CYAN);
-
-    // Horizontal separator
-    canvas.draw_line(rx + 2, ry + FONT_H + 9, rx + rw - 2, ry + FONT_H + 9, COL_PANEL_BORDER);
+    let sep_y = draw_panel_title(canvas, "Storm Slinky", rx, ry, rw);
 
     if points.is_empty() {
         canvas.draw_text("No Data", rx + rw / 2 - 24, ry + rh / 2, COL_TEXT_DIM);
@@ -532,8 +544,8 @@ pub fn draw_storm_slinky(
 
     // Plot area
     let plot_margin = 22;
-    let plot_top = ry + FONT_H + 14;
-    let plot_size = (rw - 2 * plot_margin).min(rh - FONT_H - 18 - plot_margin);
+    let plot_top = sep_y + 8;
+    let plot_size = (rw - 2 * plot_margin).min(rh - (plot_top - ry) - plot_margin - 8);
 
     let cx = rx + rw / 2;
     let cy = plot_top + plot_size / 2;
@@ -555,13 +567,7 @@ pub fn draw_storm_slinky(
         cy,
         [45, 45, 65, 255],
     );
-    canvas.draw_line(
-        cx,
-        plot_top,
-        cx,
-        plot_top + plot_size,
-        [45, 45, 65, 255],
-    );
+    canvas.draw_line(cx, plot_top, cx, plot_top + plot_size, [45, 45, 65, 255]);
 
     // Reference rings at 1/3 and 2/3 of the max displacement
     for frac in &[0.33, 0.66] {
@@ -577,7 +583,13 @@ pub fn draw_storm_slinky(
         let y0 = cy - (pair[0].sr_v * scale) as i32;
         let x1 = cx + (pair[1].sr_u * scale) as i32;
         let y1 = cy - (pair[1].sr_v * scale) as i32;
-        canvas.draw_line_aa(x0 as f64, y0 as f64, x1 as f64, y1 as f64, [120, 120, 150, 200]);
+        canvas.draw_line_aa(
+            x0 as f64,
+            y0 as f64,
+            x1 as f64,
+            y1 as f64,
+            [120, 120, 150, 200],
+        );
     }
 
     // Draw dots — LARGER (radius 5) and BRIGHTER
@@ -711,21 +723,15 @@ pub fn draw_hazard_type_panel(
     canvas.fill_rect(rx, ry, rw, rh, COL_PANEL_BG);
     draw_panel_border(canvas, rx, ry, rw, rh);
 
-    // Title in cyan
-    let title = "Possible Hazard Type";
-    let tw = Canvas::text_width(title);
-    canvas.draw_text(title, rx + (rw - tw) / 2, ry + 5, COL_CYAN);
-
-    // Horizontal separator
-    canvas.draw_line(rx + 2, ry + FONT_H + 9, rx + rw - 2, ry + FONT_H + 9, COL_PANEL_BORDER);
+    let sep_y = draw_panel_title(canvas, "Possible Hazard Type", rx, ry, rw);
 
     // Hazard label
     let label = watch.label();
     let col = hazard_color(watch);
 
     // Content area
-    let content_top = ry + FONT_H + 12;
-    let content_h = rh - FONT_H - 16;
+    let content_top = sep_y + 4;
+    let content_h = rh - (content_top - ry) - 6;
 
     // Subtle background tint bar behind the text
     let bar_col = [col[0], col[1], col[2], 35];
@@ -764,29 +770,7 @@ pub fn draw_hazard_type_panel(
 /// rendering each set pixel as an NxN block.  This produces a clean
 /// scaled-up version of the 7x10 bitmap font.
 fn draw_text_scaled(canvas: &mut Canvas, text: &str, x: i32, y: i32, col: [u8; 4], scale: i32) {
-    use super::canvas::char_bitmap;
-
-    let scaled_char_w = FONT_W * scale + scale; // character width + spacing
-
-    for (i, ch) in text.chars().enumerate() {
-        let cx = x + (i as i32) * scaled_char_w;
-        let bitmap = char_bitmap(ch);
-
-        for row in 0..FONT_H {
-            let bits = bitmap[row as usize];
-            for col_idx in 0..FONT_W {
-                if bits & (1 << (FONT_W - 1 - col_idx) as u16) != 0 {
-                    let px = cx + col_idx * scale;
-                    let py = y + row * scale;
-                    for dy in 0..scale {
-                        for dx in 0..scale {
-                            canvas.put_pixel_blend(px + dx, py + dy, col);
-                        }
-                    }
-                }
-            }
-        }
-    }
+    canvas.draw_text_scaled(text, x, y, col, scale);
 }
 
 /// Return the display color for a given watch type.
@@ -841,13 +825,7 @@ pub fn draw_temp_advection_panel(
     canvas.fill_rect(rx, ry, rw, rh, COL_PANEL_BG);
     draw_panel_border(canvas, rx, ry, rw, rh);
 
-    // Title in cyan
-    let title = "Inferred Temp Adv";
-    let tw = Canvas::text_width(title);
-    canvas.draw_text(title, rx + (rw - tw) / 2, ry + 4, COL_CYAN);
-
-    // Separator
-    canvas.draw_line(rx + 2, ry + FONT_H + 7, rx + rw - 2, ry + FONT_H + 7, COL_PANEL_BORDER);
+    let sep_y = draw_panel_title(canvas, "Inferred Temp Adv", rx, ry, rw);
 
     if levels.is_empty() {
         canvas.draw_text("N/A", rx + rw / 2 - 10, ry + rh / 2, COL_TEXT_DIM);
@@ -857,15 +835,21 @@ pub fn draw_temp_advection_panel(
     // Plot area
     let plot_left = rx + 8;
     let plot_right = rx + rw - 8;
-    let plot_top = ry + FONT_H + 12;
+    let plot_top = sep_y + 6;
     let plot_bot = ry + rh - 6;
     let plot_w = plot_right - plot_left;
     let plot_h = plot_bot - plot_top;
     let plot_cx = plot_left + plot_w / 2; // zero-advection axis
 
     // Height range
-    let min_h = levels.iter().map(|l| l.height_m).fold(f64::INFINITY, f64::min);
-    let max_h = levels.iter().map(|l| l.height_m).fold(f64::NEG_INFINITY, f64::max);
+    let min_h = levels
+        .iter()
+        .map(|l| l.height_m)
+        .fold(f64::INFINITY, f64::min);
+    let max_h = levels
+        .iter()
+        .map(|l| l.height_m)
+        .fold(f64::NEG_INFINITY, f64::max);
     let h_range = (max_h - min_h).max(1000.0);
 
     // Advection range (symmetric)
@@ -908,7 +892,12 @@ pub fn draw_temp_advection_panel(
         } else if level.advection_k_per_hr < -0.05 {
             [COL_COLD_ADV[0], COL_COLD_ADV[1], COL_COLD_ADV[2], 180]
         } else {
-            [COL_NEUTRAL_ADV[0], COL_NEUTRAL_ADV[1], COL_NEUTRAL_ADV[2], 100]
+            [
+                COL_NEUTRAL_ADV[0],
+                COL_NEUTRAL_ADV[1],
+                COL_NEUTRAL_ADV[2],
+                100,
+            ]
         };
 
         if x >= plot_cx {
@@ -930,7 +919,12 @@ pub fn draw_temp_advection_panel(
     }
 
     // Labels: "WAA" on right, "CAA" on left
-    canvas.draw_text("WAA", plot_right - Canvas::text_width("WAA") - 1, plot_top + 1, COL_WARM_ADV);
+    canvas.draw_text(
+        "WAA",
+        plot_right - Canvas::text_width("WAA") - 1,
+        plot_top + 1,
+        COL_WARM_ADV,
+    );
     canvas.draw_text("CAA", plot_left + 1, plot_top + 1, COL_COLD_ADV);
 }
 
@@ -971,12 +965,12 @@ pub fn draw_all_panels(
     rw: i32,
     rh: i32,
 ) {
-    // Allocate panel heights: SARS 18%, STP 30%, Slinky 22%, Hazard 16%, TempAdv 14%
+    // Allocate panel heights: SARS 20%, STP 29%, Slinky 21%, Hazard 16%, TempAdv 14%
     let gap = 2;
     let usable_h = rh - 4 * gap; // 4 gaps between 5 panels
-    let sars_h = (usable_h as f64 * 0.18) as i32;
-    let stp_h = (usable_h as f64 * 0.30) as i32;
-    let slinky_h = (usable_h as f64 * 0.22) as i32;
+    let sars_h = (usable_h as f64 * 0.20) as i32;
+    let stp_h = (usable_h as f64 * 0.29) as i32;
+    let slinky_h = (usable_h as f64 * 0.21) as i32;
     let hazard_h = (usable_h as f64 * 0.16) as i32;
     let temp_adv_h = usable_h - sars_h - stp_h - slinky_h - hazard_h;
 

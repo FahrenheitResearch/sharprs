@@ -40,35 +40,55 @@ fn ktoc(t: f64) -> f64 {
 #[inline]
 fn temp(prof: &Profile, p: f64) -> Option<f64> {
     let v = prof.interp_tmpc(p);
-    if v.is_finite() { Some(v) } else { None }
+    if v.is_finite() {
+        Some(v)
+    } else {
+        None
+    }
 }
 
 /// Interpolate dewpoint (°C) at a pressure level.
 #[inline]
 fn dwpt(prof: &Profile, p: f64) -> Option<f64> {
     let v = prof.interp_dwpc(p);
-    if v.is_finite() { Some(v) } else { None }
+    if v.is_finite() {
+        Some(v)
+    } else {
+        None
+    }
 }
 
 /// Interpolate height (m MSL) at a pressure level.
 #[inline]
 fn hght(prof: &Profile, p: f64) -> Option<f64> {
     let v = prof.interp_hght(p);
-    if v.is_finite() { Some(v) } else { None }
+    if v.is_finite() {
+        Some(v)
+    } else {
+        None
+    }
 }
 
 /// Virtual temperature (°C) at a pressure level.
 #[inline]
 fn vtmp(prof: &Profile, p: f64) -> Option<f64> {
     let v = prof.interp_by_pressure(&prof.vtmp, p);
-    if v.is_finite() { Some(v) } else { None }
+    if v.is_finite() {
+        Some(v)
+    } else {
+        None
+    }
 }
 
 /// Pressure (hPa) at a given MSL height.
 #[inline]
 fn pres_at(prof: &Profile, h_msl: f64) -> Option<f64> {
     let v = prof.pres_at_height(h_msl);
-    if v.is_finite() { Some(v) } else { None }
+    if v.is_finite() {
+        Some(v)
+    } else {
+        None
+    }
 }
 
 /// Mixing ratio (g/kg) using the profile module's implementation.
@@ -94,7 +114,6 @@ fn theta(p: f64, t: f64) -> f64 {
 fn relh(p: f64, t: f64, td: f64) -> f64 {
     profile::relh(p, t, td)
 }
-
 
 // ═══════════════════════════════════════════════════════════════════════════
 // K-Index
@@ -241,7 +260,11 @@ pub fn mean_mixratio(prof: &Profile, pbot: Option<f64>, ptop: Option<f64>) -> Op
             }
         }
     }
-    if count == 0 { None } else { Some(sum / count as f64) }
+    if count == 0 {
+        None
+    } else {
+        Some(sum / count as f64)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -271,7 +294,11 @@ pub fn mean_theta(prof: &Profile, pbot: Option<f64>, ptop: Option<f64>) -> Optio
             }
         }
     }
-    if wt_total == 0.0 { None } else { Some(wt_sum / wt_total) }
+    if wt_total == 0.0 {
+        None
+    } else {
+        Some(wt_sum / wt_total)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -302,7 +329,11 @@ pub fn mean_thetae(prof: &Profile, pbot: Option<f64>, ptop: Option<f64>) -> Opti
             }
         }
     }
-    if wt_total == 0.0 { None } else { Some(wt_sum / wt_total) }
+    if wt_total == 0.0 {
+        None
+    } else {
+        Some(wt_sum / wt_total)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -353,7 +384,11 @@ pub fn mean_relh(prof: &Profile, pbot: Option<f64>, ptop: Option<f64>) -> Option
             }
         }
     }
-    if wt_total == 0.0 { None } else { Some(wt_sum / wt_total) }
+    if wt_total == 0.0 {
+        None
+    } else {
+        Some(wt_sum / wt_total)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -684,9 +719,8 @@ pub fn lhp(
         return 0.0;
     }
 
-    let mut term_a = ((mucape - 2000.0) / 1000.0)
-        + ((3200.0 - hgz_thickness) / 500.0)
-        + ((lr75 - 6.5) / 2.0);
+    let mut term_a =
+        ((mucape - 2000.0) / 1000.0) + ((3200.0 - hgz_thickness) / 500.0) + ((lr75 - 6.5) / 2.0);
     if term_a < 0.0 {
         term_a = 0.0;
     }
@@ -749,9 +783,16 @@ pub fn temp_lvl(prof: &Profile, target_temp: f64, use_wetbulb: bool) -> Option<f
     };
 
     // Compute differences from target
-    let diffs: Vec<f64> = profile_vals.iter().map(|&v| {
-        if v.is_finite() { v - target_temp } else { f64::NAN }
-    }).collect();
+    let diffs: Vec<f64> = profile_vals
+        .iter()
+        .map(|&v| {
+            if v.is_finite() {
+                v - target_temp
+            } else {
+                f64::NAN
+            }
+        })
+        .collect();
 
     // Check if values exist on both sides of zero
     let has_pos = diffs.iter().any(|&d| d.is_finite() && d >= 0.0);
@@ -875,24 +916,29 @@ mod tests {
     /// Rough standard-atmosphere lapse rate with decreasing moisture aloft.
     fn test_profile() -> Profile {
         let pres = [
-            1000.0, 950.0, 900.0, 850.0, 800.0, 750.0, 700.0, 650.0, 600.0, 550.0, 500.0,
-            450.0, 400.0, 350.0, 300.0, 250.0, 200.0,
+            1000.0, 950.0, 900.0, 850.0, 800.0, 750.0, 700.0, 650.0, 600.0, 550.0, 500.0, 450.0,
+            400.0, 350.0, 300.0, 250.0, 200.0,
         ];
         let hght = [
-            0.0, 540.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4200.0, 4900.0,
-            5600.0, 6400.0, 7200.0, 8100.0, 9200.0, 10400.0, 11800.0,
+            0.0, 540.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4200.0, 4900.0, 5600.0,
+            6400.0, 7200.0, 8100.0, 9200.0, 10400.0, 11800.0,
         ];
         let tmpc = [
-            30.0, 25.0, 20.0, 15.0, 10.0, 5.0, 0.0, -5.0, -12.0, -20.0, -28.0, -36.0, -45.0,
-            -52.0, -58.0, -62.0, -60.0,
+            30.0, 25.0, 20.0, 15.0, 10.0, 5.0, 0.0, -5.0, -12.0, -20.0, -28.0, -36.0, -45.0, -52.0,
+            -58.0, -62.0, -60.0,
         ];
         let dwpc = [
             20.0, 17.0, 14.0, 10.0, 6.0, 1.0, -5.0, -12.0, -20.0, -28.0, -36.0, -44.0, -52.0,
             -58.0, -62.0, -68.0, -72.0,
         ];
         Profile::new(
-            &pres, &hght, &tmpc, &dwpc,
-            &[], &[], &[],
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &[],
+            &[],
+            &[],
             StationInfo::default(),
         )
         .expect("test sounding should be valid")
@@ -905,8 +951,13 @@ mod tests {
         let tmpc = [15.0, 10.0, 12.0, 8.0, 4.0, -2.0, -20.0];
         let dwpc = [10.0, 6.0, 5.0, 2.0, -2.0, -10.0, -30.0];
         Profile::new(
-            &pres, &hght, &tmpc, &dwpc,
-            &[], &[], &[],
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &[],
+            &[],
+            &[],
             StationInfo::default(),
         )
         .expect("inversion sounding should be valid")
@@ -920,10 +971,7 @@ mod tests {
         let ki = k_index(&prof).unwrap();
         // T850=15, T500=-28, Td850=10, T700=0, Td700=-5
         // K = 15-(-28) + 10 - (0-(-5)) = 43 + 10 - 5 = 48
-        assert!(
-            (ki - 48.0).abs() < 0.5,
-            "K-Index should be ~48, got {ki}"
-        );
+        assert!((ki - 48.0).abs() < 0.5, "K-Index should be ~48, got {ki}");
     }
 
     #[test]
@@ -934,7 +982,9 @@ mod tests {
             &[0.0, 540.0],
             &[30.0, 25.0],
             &[20.0, 17.0],
-            &[], &[], &[],
+            &[],
+            &[],
+            &[],
             StationInfo::default(),
         )
         .unwrap();
@@ -947,10 +997,7 @@ mod tests {
     fn v_totals_basic() {
         let prof = test_profile();
         let vt = v_totals(&prof).unwrap();
-        assert!(
-            (vt - 43.0).abs() < 0.5,
-            "V-Totals should be ~43, got {vt}"
-        );
+        assert!((vt - 43.0).abs() < 0.5, "V-Totals should be ~43, got {vt}");
     }
 
     #[test]
@@ -958,20 +1005,14 @@ mod tests {
         let prof = test_profile();
         let ct = c_totals(&prof).unwrap();
         // Td850=10, T500=-28 → CT = 38
-        assert!(
-            (ct - 38.0).abs() < 0.5,
-            "C-Totals should be ~38, got {ct}"
-        );
+        assert!((ct - 38.0).abs() < 0.5, "C-Totals should be ~38, got {ct}");
     }
 
     #[test]
     fn t_totals_basic() {
         let prof = test_profile();
         let tt = t_totals(&prof).unwrap();
-        assert!(
-            (tt - 81.0).abs() < 1.0,
-            "T-Totals should be ~81, got {tt}"
-        );
+        assert!((tt - 81.0).abs() < 1.0, "T-Totals should be ~81, got {tt}");
     }
 
     // ---- Precipitable Water ---------------------------------------------
@@ -1002,10 +1043,7 @@ mod tests {
         let prof = test_profile();
         let mmr = mean_mixratio(&prof, None, None).unwrap();
         // Surface Td=20°C at 1000 hPa → MR ~14.7 g/kg; layer mean somewhat less
-        assert!(
-            mmr > 5.0 && mmr < 20.0,
-            "Mean MR should be 5–20, got {mmr}"
-        );
+        assert!(mmr > 5.0 && mmr < 20.0, "Mean MR should be 5–20, got {mmr}");
     }
 
     // ---- Mean Theta -----------------------------------------------------
@@ -1070,10 +1108,7 @@ mod tests {
     fn lapse_rate_height_coords() {
         let prof = test_profile();
         let lr = lapse_rate(&prof, 0.0, 3000.0, false).unwrap();
-        assert!(
-            lr > 5.0 && lr < 15.0,
-            "0-3km LR should be 5–15, got {lr}"
-        );
+        assert!(lr > 5.0 && lr < 15.0, "0-3km LR should be 5–15, got {lr}");
     }
 
     // ---- Max Lapse Rate -------------------------------------------------
@@ -1083,7 +1118,12 @@ mod tests {
         let prof = test_profile();
         let mlr = max_lapse_rate(&prof, None, None, None, None).unwrap();
         assert!(mlr.value > 0.0, "Max LR should be > 0, got {}", mlr.value);
-        assert!(mlr.pbot > mlr.ptop, "pbot ({}) should be > ptop ({})", mlr.pbot, mlr.ptop);
+        assert!(
+            mlr.pbot > mlr.ptop,
+            "pbot ({}) should be > ptop ({})",
+            mlr.pbot,
+            mlr.ptop
+        );
     }
 
     // ---- Inversion Detection --------------------------------------------
@@ -1165,7 +1205,10 @@ mod tests {
     #[test]
     fn lhp_positive_favorable() {
         let val = lhp(3000.0, 25.0, 7.5, 2800.0, 35.0, 15.0, 100.0);
-        assert!(val > 5.0, "LHP should be > 5 with favorable params, got {val}");
+        assert!(
+            val > 5.0,
+            "LHP should be > 5 with favorable params, got {val}"
+        );
     }
 
     #[test]
@@ -1255,10 +1298,7 @@ mod tests {
     #[test]
     fn coniglio_positive() {
         let m = coniglio(2500.0, 40.0, 7.5, 18.0);
-        assert!(
-            m > 0.0 && m <= 1.0,
-            "MMP should be in (0, 1], got {m}"
-        );
+        assert!(m > 0.0 && m <= 1.0, "MMP should be in (0, 1], got {m}");
     }
 
     #[test]

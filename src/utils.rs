@@ -286,7 +286,10 @@ pub fn mag(u: Option<f64>, v: Option<f64>) -> Option<f64> {
 /// Compute element-wise vector magnitude for paired slices.
 pub fn mag_slice(u: &[Option<f64>], v: &[Option<f64>]) -> Vec<Option<f64>> {
     assert_eq!(u.len(), v.len(), "u and v must have the same length");
-    u.iter().zip(v.iter()).map(|(&uu, &vv)| mag(uu, vv)).collect()
+    u.iter()
+        .zip(v.iter())
+        .map(|(&uu, &vv)| mag(uu, vv))
+        .collect()
 }
 
 // =========================================================================

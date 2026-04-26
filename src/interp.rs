@@ -115,10 +115,7 @@ pub fn generic_interp_pres(p: f64, pres: &[f64], field: &[f64]) -> Option<f64> {
 
     // SHARPpy reverses the arrays so that logp is ascending for np.interp.
     // We build ascending-sorted vectors directly.
-    let mut coords: Vec<(f64, f64)> = idx
-        .iter()
-        .map(|&i| (pres[i].log10(), field[i]))
-        .collect();
+    let mut coords: Vec<(f64, f64)> = idx.iter().map(|&i| (pres[i].log10(), field[i])).collect();
     coords.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     let xp: Vec<f64> = coords.iter().map(|c| c.0).collect();
@@ -157,10 +154,7 @@ pub fn generic_interp_hght(h: f64, hght: &[f64], field: &[f64], log: bool) -> Op
     }
 
     // Height should already be ascending, but we guarantee it.
-    let mut coords: Vec<(f64, f64)> = idx
-        .iter()
-        .map(|&i| (hght[i], field[i]))
-        .collect();
+    let mut coords: Vec<(f64, f64)> = idx.iter().map(|&i| (hght[i], field[i])).collect();
     coords.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     let xp: Vec<f64> = coords.iter().map(|c| c.0).collect();
@@ -269,12 +263,7 @@ pub fn wetbulb(p: f64, pres_arr: &[f64], wetbulb_arr: &[f64]) -> Option<f64> {
 ///
 /// # Returns
 /// `Some((u, v))` on success, `None` if either component cannot be computed.
-pub fn components(
-    p: f64,
-    pres_arr: &[f64],
-    u_arr: &[f64],
-    v_arr: &[f64],
-) -> Option<(f64, f64)> {
+pub fn components(p: f64, pres_arr: &[f64], u_arr: &[f64], v_arr: &[f64]) -> Option<(f64, f64)> {
     let u = generic_interp_pres(p, pres_arr, u_arr)?;
     let v = generic_interp_pres(p, pres_arr, v_arr)?;
     Some((u, v))
@@ -311,12 +300,7 @@ fn comp2vec(u: f64, v: f64) -> (f64, f64) {
 /// # Returns
 /// `Some((direction_deg, speed_kt))` on success, `None` if the wind
 /// components cannot be interpolated.
-pub fn vec(
-    p: f64,
-    pres_arr: &[f64],
-    u_arr: &[f64],
-    v_arr: &[f64],
-) -> Option<(f64, f64)> {
+pub fn vec(p: f64, pres_arr: &[f64], u_arr: &[f64], v_arr: &[f64]) -> Option<(f64, f64)> {
     let (u, v) = components(p, pres_arr, u_arr, v_arr)?;
     Some(comp2vec(u, v))
 }

@@ -38,7 +38,11 @@ fn qc(v: f64) -> bool {
 /// Wraps a raw f64 into `Some` only if it passes QC.
 #[inline]
 fn qc_opt(v: f64) -> Option<f64> {
-    if qc(v) { Some(v) } else { None }
+    if qc(v) {
+        Some(v)
+    } else {
+        None
+    }
 }
 
 // =========================================================================
@@ -135,13 +139,7 @@ pub fn stp_fixed(sbcape: f64, sblcl: f64, srh01: f64, bwd6: f64) -> Option<f64> 
 /// An evolution of `stp_fixed` that accounts for convective inhibition and
 /// uses the effective inflow layer (Thompson et al. 2007) instead of fixed
 /// height layers, improving discrimination in elevated-storm environments.
-pub fn stp_cin(
-    mlcape: f64,
-    esrh: f64,
-    ebwd: f64,
-    mllcl: f64,
-    mlcinh: f64,
-) -> Option<f64> {
+pub fn stp_cin(mlcape: f64, esrh: f64, ebwd: f64, mllcl: f64, mlcinh: f64) -> Option<f64> {
     if !qc(mlcape) || !qc(esrh) || !qc(ebwd) || !qc(mllcl) || !qc(mlcinh) {
         return None;
     }
@@ -491,9 +489,7 @@ pub fn dcp(dcape: f64, mucape: f64, shear_06_kt: f64, mean_wind_06_kt: f64) -> O
     if !qc(dcape) || !qc(mucape) || !qc(shear_06_kt) || !qc(mean_wind_06_kt) {
         return None;
     }
-    Some(
-        (dcape / 980.0) * (mucape / 2000.0) * (shear_06_kt / 20.0) * (mean_wind_06_kt / 16.0),
-    )
+    Some((dcape / 980.0) * (mucape / 2000.0) * (shear_06_kt / 20.0) * (mean_wind_06_kt / 16.0))
 }
 
 // =========================================================================
@@ -537,8 +533,14 @@ pub fn mburst(
     sfc_thetae: f64,
 ) -> Option<i32> {
     // Check all inputs
-    if !qc(sbcape) || !qc(sbli) || !qc(lr03) || !qc(vt) || !qc(dcape)
-        || !qc(pwat) || !qc(thetae_diff) || !qc(sfc_thetae)
+    if !qc(sbcape)
+        || !qc(sbli)
+        || !qc(lr03)
+        || !qc(vt)
+        || !qc(dcape)
+        || !qc(pwat)
+        || !qc(thetae_diff)
+        || !qc(sfc_thetae)
     {
         return None;
     }
@@ -597,8 +599,8 @@ pub fn mburst(
     // Theta-E difference term
     let ted_term: i32 = if thetae_diff >= 35.0 { 1 } else { 0 };
 
-    let total = te_term + sbcape_term + sbli_term + pwat_term + dcape_term
-        + lr03_term + vt_term + ted_term;
+    let total =
+        te_term + sbcape_term + sbli_term + pwat_term + dcape_term + lr03_term + vt_term + ted_term;
 
     Some(total.max(0))
 }
@@ -1075,8 +1077,8 @@ mod tests {
         //          = 13 - 1.377 - 8.7 - 1.234 - 2.04 = -0.351
         // mmp = 1/(1+exp(-0.351)) = 1/(1+0.7039) = 0.5869
         let result = mmp(2000.0, 30.0, 7.5, 12.0).unwrap();
-        let exponent: f64 = 13.0 + (-0.0459 * 30.0) + (-1.16 * 7.5)
-            + (-0.000617 * 2000.0) + (-0.17 * 12.0);
+        let exponent: f64 =
+            13.0 + (-0.0459 * 30.0) + (-1.16 * 7.5) + (-0.000617 * 2000.0) + (-0.17 * 12.0);
         let expected = 1.0 / (1.0 + exponent.exp());
         assert!((result - expected).abs() < EPS);
     }

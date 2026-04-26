@@ -44,8 +44,7 @@ fn main() {
         sharprs::Profile::from_sharppy_text(&text)
     } else {
         // Try Wyoming format, fall back to CSV
-        sharprs::Profile::from_wyoming(&text)
-            .or_else(|_| sharprs::Profile::from_csv(&text))
+        sharprs::Profile::from_wyoming(&text).or_else(|_| sharprs::Profile::from_csv(&text))
     };
 
     let profile = match profile {
@@ -69,13 +68,29 @@ fn main() {
 
     eprintln!(
         "  SBCAPE={:.0}  MLCAPE={:.0}  MUCAPE={:.0}",
-        if params.sfcpcl.bplus.is_finite() { params.sfcpcl.bplus } else { 0.0 },
-        if params.mlpcl.bplus.is_finite() { params.mlpcl.bplus } else { 0.0 },
-        if params.mupcl.bplus.is_finite() { params.mupcl.bplus } else { 0.0 },
+        if params.sfcpcl.bplus.is_finite() {
+            params.sfcpcl.bplus
+        } else {
+            0.0
+        },
+        if params.mlpcl.bplus.is_finite() {
+            params.mlpcl.bplus
+        } else {
+            0.0
+        },
+        if params.mupcl.bplus.is_finite() {
+            params.mupcl.bplus
+        } else {
+            0.0
+        },
     );
 
     // Render the full sounding image (2400x1800, 2× for crisp output)
-    eprintln!("Rendering {}x{} image...", sharprs::render::compositor::IMG_W, sharprs::render::compositor::IMG_H);
+    eprintln!(
+        "Rendering {}x{} image...",
+        sharprs::render::compositor::IMG_W,
+        sharprs::render::compositor::IMG_H
+    );
     let png_bytes = sharprs::render::render_full_sounding(&profile, &params);
 
     // Write output

@@ -36,7 +36,9 @@ fn require_wind(prof: &Profile) -> Result<(), SharpError> {
 /// Require a value to be finite and not MISSING.
 fn require_valid(v: f64, name: &str) -> Result<(), SharpError> {
     if !is_valid(v) {
-        Err(SharpError::InvalidInput(format!("{name} is missing or invalid")))
+        Err(SharpError::InvalidInput(format!(
+            "{name} is missing or invalid"
+        )))
     } else {
         Ok(())
     }
@@ -174,11 +176,7 @@ pub fn sr_wind_npw(
 ///
 /// Returns the vector difference (top − bottom).  Matches SHARPpy
 /// `wind_shear()`.
-pub fn wind_shear(
-    prof: &Profile,
-    pbot: f64,
-    ptop: f64,
-) -> Result<(f64, f64), SharpError> {
+pub fn wind_shear(prof: &Profile, pbot: f64, ptop: f64) -> Result<(f64, f64), SharpError> {
     require_wind(prof)?;
     require_valid(pbot, "pbot")?;
     require_valid(ptop, "ptop")?;
@@ -280,7 +278,10 @@ pub fn helicity(
     };
 
     if us.len() < 2 {
-        return Err(SharpError::InsufficientLevels { need: 2, got: us.len() });
+        return Err(SharpError::InsufficientLevels {
+            need: 2,
+            got: us.len(),
+        });
     }
 
     // Storm-relative components converted to m/s (SHARPpy: KTS2MS(u - stu))
@@ -315,9 +316,7 @@ pub fn helicity(
 /// with a 7.5 m/s deviation magnitude perpendicular to the shear vector.
 ///
 /// Matches SHARPpy `non_parcel_bunkers_motion()`.
-pub fn non_parcel_bunkers_motion(
-    prof: &Profile,
-) -> Result<(f64, f64, f64, f64), SharpError> {
+pub fn non_parcel_bunkers_motion(prof: &Profile) -> Result<(f64, f64, f64, f64), SharpError> {
     require_wind(prof)?;
 
     // 7.5 m/s deviation, converted to knots for internal arithmetic
@@ -326,7 +325,9 @@ pub fn non_parcel_bunkers_motion(
     let msl6km = prof.to_msl(6000.0);
     let p6km = prof.pres_at_height(msl6km);
     if !p6km.is_finite() {
-        return Err(SharpError::NoData { field: "pressure at 6 km" });
+        return Err(SharpError::NoData {
+            field: "pressure at 6 km",
+        });
     }
 
     // SFC-6km non-pressure-weighted mean wind (kts)
@@ -415,9 +416,7 @@ pub fn non_parcel_bunkers_motion_experimental(
 /// the surface pressure as the bottom.
 ///
 /// Matches SHARPpy `corfidi_mcs_motion()`.
-pub fn corfidi_mcs_motion(
-    prof: &Profile,
-) -> Result<(f64, f64, f64, f64), SharpError> {
+pub fn corfidi_mcs_motion(prof: &Profile) -> Result<(f64, f64, f64, f64), SharpError> {
     require_wind(prof)?;
 
     // Tropospheric mean wind (850-300 hPa or sfc-300 hPa, npw)
@@ -432,7 +431,9 @@ pub fn corfidi_mcs_motion(
     let msl1500 = prof.to_msl(1500.0);
     let p1500 = prof.pres_at_height(msl1500);
     if !p1500.is_finite() {
-        return Err(SharpError::NoData { field: "pressure at 1.5 km" });
+        return Err(SharpError::NoData {
+            field: "pressure at 1.5 km",
+        });
     }
     let (mnu2, mnv2) = mean_wind_npw(prof, prof.sfc_pressure(), p1500, -1.0, 0.0, 0.0)?;
 
@@ -448,9 +449,7 @@ pub fn corfidi_mcs_motion(
 }
 
 /// Alias for [`corfidi_mcs_motion`].
-pub fn mbe_vectors(
-    prof: &Profile,
-) -> Result<(f64, f64, f64, f64), SharpError> {
+pub fn mbe_vectors(prof: &Profile) -> Result<(f64, f64, f64, f64), SharpError> {
     corfidi_mcs_motion(prof)
 }
 
@@ -464,11 +463,7 @@ pub fn mbe_vectors(
 /// case of ties).  All values in knots/hPa.
 ///
 /// Matches SHARPpy `max_wind()`.
-pub fn max_wind(
-    prof: &Profile,
-    lower: f64,
-    upper: f64,
-) -> Result<(f64, f64, f64), SharpError> {
+pub fn max_wind(prof: &Profile, lower: f64, upper: f64) -> Result<(f64, f64, f64), SharpError> {
     require_wind(prof)?;
     require_valid(lower, "lower")?;
     require_valid(upper, "upper")?;
@@ -506,7 +501,9 @@ pub fn max_wind(
     }
 
     if best_spd < 0.0 {
-        return Err(SharpError::NoData { field: "wind in layer" });
+        return Err(SharpError::NoData {
+            field: "wind in layer",
+        });
     }
 
     Ok((best_u, best_v, best_p))
@@ -525,11 +522,7 @@ pub fn max_wind(
 /// `stu` and `stv` are storm-motion components in **knots**.
 ///
 /// Matches SHARPpy `critical_angle()`.
-pub fn critical_angle(
-    prof: &Profile,
-    stu: f64,
-    stv: f64,
-) -> Result<f64, SharpError> {
+pub fn critical_angle(prof: &Profile, stu: f64, stv: f64) -> Result<f64, SharpError> {
     require_wind(prof)?;
     require_valid(stu, "stu")?;
     require_valid(stv, "stv")?;
@@ -537,7 +530,9 @@ pub fn critical_angle(
     let msl500 = prof.to_msl(500.0);
     let p500 = prof.pres_at_height(msl500);
     if !p500.is_finite() {
-        return Err(SharpError::NoData { field: "pressure at 500 m" });
+        return Err(SharpError::NoData {
+            field: "pressure at 500 m",
+        });
     }
 
     let (u500, v500) = prof.interp_wind(p500);
@@ -582,34 +577,39 @@ mod tests {
     fn make_test_profile() -> Profile {
         // Pressure (hPa), Height (m MSL), Temp (C), Dewpt (C), Wdir (deg), Wspd (kts)
         let pres = [
-            1000.0, 950.0, 900.0, 850.0, 800.0, 750.0, 700.0, 650.0, 600.0,
-            550.0, 500.0, 450.0, 400.0, 350.0, 300.0, 250.0, 200.0,
+            1000.0, 950.0, 900.0, 850.0, 800.0, 750.0, 700.0, 650.0, 600.0, 550.0, 500.0, 450.0,
+            400.0, 350.0, 300.0, 250.0, 200.0,
         ];
         let hght = [
-            100.0, 540.0, 1000.0, 1480.0, 1980.0, 2500.0, 3050.0, 3620.0,
-            4220.0, 4860.0, 5540.0, 6280.0, 7100.0, 8000.0, 9100.0, 10400.0,
-            11800.0,
+            100.0, 540.0, 1000.0, 1480.0, 1980.0, 2500.0, 3050.0, 3620.0, 4220.0, 4860.0, 5540.0,
+            6280.0, 7100.0, 8000.0, 9100.0, 10400.0, 11800.0,
         ];
         let tmpc = [
-            30.0, 25.0, 20.0, 16.0, 12.0, 8.0, 4.0, 0.0, -5.0, -10.0,
-            -16.0, -22.0, -30.0, -38.0, -45.0, -55.0, -60.0,
+            30.0, 25.0, 20.0, 16.0, 12.0, 8.0, 4.0, 0.0, -5.0, -10.0, -16.0, -22.0, -30.0, -38.0,
+            -45.0, -55.0, -60.0,
         ];
         let dwpc = [
-            22.0, 18.0, 12.0, 8.0, 3.0, -2.0, -8.0, -14.0, -20.0, -26.0,
-            -32.0, -38.0, -44.0, -50.0, -55.0, -60.0, -65.0,
+            22.0, 18.0, 12.0, 8.0, 3.0, -2.0, -8.0, -14.0, -20.0, -26.0, -32.0, -38.0, -44.0,
+            -50.0, -55.0, -60.0, -65.0,
         ];
         // Veering winds: 180 at sfc → 290 at jet level, speed 10→80 kts
         let wdir = [
-            180.0, 190.0, 210.0, 230.0, 240.0, 250.0, 260.0, 265.0, 270.0,
-            275.0, 280.0, 285.0, 290.0, 290.0, 285.0, 280.0, 275.0,
+            180.0, 190.0, 210.0, 230.0, 240.0, 250.0, 260.0, 265.0, 270.0, 275.0, 280.0, 285.0,
+            290.0, 290.0, 285.0, 280.0, 275.0,
         ];
         let wspd = [
-            10.0, 15.0, 22.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
-            65.0, 70.0, 75.0, 78.0, 80.0, 75.0, 65.0,
+            10.0, 15.0, 22.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 78.0,
+            80.0, 75.0, 65.0,
         ];
 
         Profile::new(
-            &pres, &hght, &tmpc, &dwpc, &wdir, &wspd, &[],
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &wdir,
+            &wspd,
+            &[],
             StationInfo::default(),
         )
         .expect("test sounding should be valid")
@@ -624,7 +624,10 @@ mod tests {
         // Should be roughly westerly (u > 0)
         assert!(mu > 0.0, "mean u should be positive (westerly), got {mu}");
         let spd = mag_f64(mu, mv);
-        assert!(spd > 10.0 && spd < 100.0, "mean wind speed unreasonable: {spd}");
+        assert!(
+            spd > 10.0 && spd < 100.0,
+            "mean wind speed unreasonable: {spd}"
+        );
     }
 
     #[test]
@@ -698,10 +701,7 @@ mod tests {
         let (rstu, rstv, _, _) = non_parcel_bunkers_motion(&prof).unwrap();
         let (h1, _, _) = helicity(&prof, 0.0, 1000.0, rstu, rstv, -1.0, true).unwrap();
         let (h3, _, _) = helicity(&prof, 0.0, 3000.0, rstu, rstv, -1.0, true).unwrap();
-        assert!(
-            h3 > h1,
-            "0-3km SRH ({h3}) should exceed 0-1km SRH ({h1})"
-        );
+        assert!(h3 > h1, "0-3km SRH ({h3}) should exceed 0-1km SRH ({h1})");
     }
 
     #[test]
@@ -784,8 +784,7 @@ mod tests {
     #[test]
     fn test_bunkers_experimental() {
         let prof = make_test_profile();
-        let (rstu, rstv, lstu, lstv) =
-            non_parcel_bunkers_motion_experimental(&prof).unwrap();
+        let (rstu, rstv, lstu, lstv) = non_parcel_bunkers_motion_experimental(&prof).unwrap();
 
         let rm_spd = mag_f64(rstu, rstv);
         let lm_spd = mag_f64(lstu, lstv);
@@ -847,7 +846,13 @@ mod tests {
         let wspd = [0.0, 10.0, 15.0, 20.0, 30.0, 50.0];
 
         let prof = Profile::new(
-            &pres, &hght, &tmpc, &dwpc, &wdir, &wspd, &[],
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &wdir,
+            &wspd,
+            &[],
             StationInfo::default(),
         )
         .unwrap();
@@ -877,7 +882,13 @@ mod tests {
         let dwpc = [20.0, -30.0];
         // No wind data
         let prof = Profile::new(
-            &pres, &hght, &tmpc, &dwpc, &[], &[], &[],
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &[],
+            &[],
+            &[],
             StationInfo::default(),
         )
         .unwrap();

@@ -54,9 +54,16 @@ impl PyProfile {
         wspd: Vec<f64>,
     ) -> PyResult<Self> {
         let inner = prof::Profile::new(
-            &pres, &hght, &tmpc, &dwpc, &wdir, &wspd, &[],
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &wdir,
+            &wspd,
+            &[],
             prof::StationInfo::default(),
-        ).map_err(|e| PyValueError::new_err(e.to_string()))?;
+        )
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(Self { inner })
     }
 
@@ -201,16 +208,16 @@ impl PyProfile {
     /// Parse a University of Wyoming upper-air text sounding.
     #[staticmethod]
     fn from_wyoming(text: &str) -> PyResult<Self> {
-        let inner = prof::Profile::from_wyoming(text)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let inner =
+            prof::Profile::from_wyoming(text).map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(Self { inner })
     }
 
     /// Parse a CSV sounding file.
     #[staticmethod]
     fn from_csv(text: &str) -> PyResult<Self> {
-        let inner = prof::Profile::from_csv(text)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let inner =
+            prof::Profile::from_csv(text).map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(Self { inner })
     }
 
@@ -293,7 +300,11 @@ fn compute_cape_cin(p: &prof::Profile) -> (f64, f64) {
         if !env_t.is_finite() {
             continue;
         }
-        let _env_mr = if env_d.is_finite() { prof::mixratio(p_mid, env_d) } else { 0.0 };
+        let _env_mr = if env_d.is_finite() {
+            prof::mixratio(p_mid, env_d)
+        } else {
+            0.0
+        };
         let env_tv = prof::virtemp(p_mid, env_t, if env_d.is_finite() { env_d } else { env_t });
 
         // Parcel
@@ -362,7 +373,11 @@ fn calc_mean_wind_uv(p: &prof::Profile, bot_agl: f64, top_agl: f64) -> (f64, f64
             n += 1.0;
         }
     }
-    if n < 1.0 { (0.0, 0.0) } else { (su / n, sv / n) }
+    if n < 1.0 {
+        (0.0, 0.0)
+    } else {
+        (su / n, sv / n)
+    }
 }
 
 /// Bunkers storm motion: ((rm_u, rm_v), (lm_u, lm_v), (mean_u, mean_v)) in kts.
@@ -582,11 +597,17 @@ fn effective_inflow_layer(prof: &PyProfile) -> PyResult<(f64, f64)> {
                 continue;
             }
             let b = G * (parcel_t - env_t) / (env_t + ZEROCNK) * dz;
-            if b > 0.0 { c += b; } else { ci += b; }
+            if b > 0.0 {
+                c += b;
+            } else {
+                ci += b;
+            }
         }
 
         if c >= cape_thresh && ci >= cin_thresh {
-            if bot == MISSING { bot = pp; }
+            if bot == MISSING {
+                bot = pp;
+            }
             top = pp;
         } else if bot != MISSING {
             break;
@@ -656,8 +677,12 @@ fn wind_shear(prof: &PyProfile, bottom: f64, top: f64) -> PyResult<(f64, f64, f6
     let mut bot_idx = p.sfc;
     let mut top_idx = p.pres.len() - 1;
     for i in 0..p.hght.len() {
-        if p.hght[i].is_finite() && p.hght[i] <= bot_h { bot_idx = i; }
-        if p.hght[i].is_finite() && p.hght[i] <= top_h { top_idx = i; }
+        if p.hght[i].is_finite() && p.hght[i] <= bot_h {
+            bot_idx = i;
+        }
+        if p.hght[i].is_finite() && p.hght[i] <= top_h {
+            top_idx = i;
+        }
     }
 
     let bu = p.u[bot_idx];
@@ -684,7 +709,11 @@ fn wind_shear(prof: &PyProfile, bottom: f64, top: f64) -> PyResult<(f64, f64, f6
 /// Accepts scalars or numpy arrays of pressure (hPa) and temperature (°C).
 #[pyfunction]
 #[pyo3(name = "theta", signature = (pressure, temperature))]
-fn py_theta(py: Python<'_>, pressure: &Bound<'_, PyAny>, temperature: &Bound<'_, PyAny>) -> PyResult<PyObject> {
+fn py_theta(
+    py: Python<'_>,
+    pressure: &Bound<'_, PyAny>,
+    temperature: &Bound<'_, PyAny>,
+) -> PyResult<PyObject> {
     if let (Ok(p_arr), Ok(t_arr)) = (
         pressure.extract::<PyReadonlyArray1<f64>>(),
         temperature.extract::<PyReadonlyArray1<f64>>(),
@@ -700,7 +729,10 @@ fn py_theta(py: Python<'_>, pressure: &Bound<'_, PyAny>, temperature: &Bound<'_,
     } else {
         let p: f64 = pressure.extract()?;
         let t: f64 = temperature.extract()?;
-        Ok(prof::ctok(prof::theta(p, t)).into_pyobject(py)?.into_any().unbind())
+        Ok(prof::ctok(prof::theta(p, t))
+            .into_pyobject(py)?
+            .into_any()
+            .unbind())
     }
 }
 
@@ -766,7 +798,10 @@ fn py_wetbulb(
         let p: f64 = pressure.extract()?;
         let t: f64 = temperature.extract()?;
         let d: f64 = dewpoint.extract()?;
-        Ok(prof::wetbulb(p, t, d).into_pyobject(py)?.into_any().unbind())
+        Ok(prof::wetbulb(p, t, d)
+            .into_pyobject(py)?
+            .into_any()
+            .unbind())
     }
 }
 
@@ -834,11 +869,9 @@ fn haines_index(prof: &PyProfile, regime: Option<u8>) -> PyResult<PyObject> {
         crate::fire::HainesElevation::High => crate::fire::haines_high(t700, t500, td700),
     };
 
-    Python::with_gil(|py| {
-        match result {
-            Some(v) => Ok(v.into_pyobject(py)?.into_any().unbind()),
-            None => Ok(py.None()),
-        }
+    Python::with_gil(|py| match result {
+        Some(v) => Ok(v.into_pyobject(py)?.into_any().unbind()),
+        None => Ok(py.None()),
     })
 }
 
@@ -895,7 +928,9 @@ fn register_params(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ship, &m)?)?;
     m.add_function(wrap_pyfunction!(effective_inflow_layer, &m)?)?;
     parent.add_submodule(&m)?;
-    parent.py().import("sys")?
+    parent
+        .py()
+        .import("sys")?
         .getattr("modules")?
         .set_item("sharprs.params", &m)?;
     Ok(())
@@ -908,7 +943,9 @@ fn register_thermo(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_wetbulb, &m)?)?;
     m.add_function(wrap_pyfunction!(py_mixing_ratio, &m)?)?;
     parent.add_submodule(&m)?;
-    parent.py().import("sys")?
+    parent
+        .py()
+        .import("sys")?
         .getattr("modules")?
         .set_item("sharprs.thermo", &m)?;
     Ok(())
@@ -921,7 +958,9 @@ fn register_winds(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(mean_wind, &m)?)?;
     m.add_function(wrap_pyfunction!(wind_shear, &m)?)?;
     parent.add_submodule(&m)?;
-    parent.py().import("sys")?
+    parent
+        .py()
+        .import("sys")?
         .getattr("modules")?
         .set_item("sharprs.winds", &m)?;
     Ok(())
@@ -933,7 +972,9 @@ fn register_fire(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fosberg_fwi, &m)?)?;
     m.add_function(wrap_pyfunction!(hot_dry_windy, &m)?)?;
     parent.add_submodule(&m)?;
-    parent.py().import("sys")?
+    parent
+        .py()
+        .import("sys")?
         .getattr("modules")?
         .set_item("sharprs.fire", &m)?;
     Ok(())

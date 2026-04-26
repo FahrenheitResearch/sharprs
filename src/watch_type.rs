@@ -71,9 +71,7 @@ pub fn heat_index(temp_f: f64, rh: f64) -> f64 {
     }
 
     let t = temp_f;
-    let mut hi = -42.379
-        + 2.04901523 * t
-        + 10.14333127 * rh
+    let mut hi = -42.379 + 2.04901523 * t + 10.14333127 * rh
         - 0.22475541 * t * rh
         - 6.83783e-3 * t * t
         - 5.481717e-2 * rh * rh
@@ -96,8 +94,7 @@ pub fn heat_index(temp_f: f64, rh: f64) -> f64 {
 ///
 /// Uses the NWS formula: <https://www.weather.gov/safety/cold-wind-chill-chart>
 pub fn wind_chill(temp_f: f64, wspd_mph: f64) -> f64 {
-    35.74 + 0.6215 * temp_f - 35.75 * wspd_mph.powf(0.16)
-        + 0.4275 * temp_f * wspd_mph.powf(0.16)
+    35.74 + 0.6215 * temp_f - 35.75 * wspd_mph.powf(0.16) + 0.4275 * temp_f * wspd_mph.powf(0.16)
 }
 
 // ---------------------------------------------------------------------------
@@ -223,9 +220,7 @@ pub fn possible_watch(p: &WatchParams) -> Vec<WatchType> {
         && p.ebotm == 0.0
     {
         types.push(WatchType::PdsTornado);
-    } else if (p.stp_eff >= 3.0 || p.stp_fixed >= 4.0)
-        && p.mlpcl_bminus > -125.0
-        && p.ebotm == 0.0
+    } else if (p.stp_eff >= 3.0 || p.stp_fixed >= 4.0) && p.mlpcl_bminus > -125.0 && p.ebotm == 0.0
     {
         types.push(WatchType::Tornado);
     } else if (p.stp_eff >= 1.0 || p.stp_fixed >= 1.0)
@@ -241,13 +236,10 @@ pub fn possible_watch(p: &WatchParams) -> Vec<WatchType> {
         && p.ebotm == 0.0
     {
         types.push(WatchType::Tornado);
-    } else if (p.stp_eff >= 1.0 || p.stp_fixed >= 1.0)
-        && p.mlpcl_bminus > -150.0
-        && p.ebotm == 0.0
+    } else if (p.stp_eff >= 1.0 || p.stp_fixed >= 1.0) && p.mlpcl_bminus > -150.0 && p.ebotm == 0.0
     {
         types.push(WatchType::MarginalTornado);
-    } else if ((p.stp_eff >= 0.5 && p.esrh >= 150.0)
-        || (p.stp_fixed >= 0.5 && p.srh1km >= 150.0))
+    } else if ((p.stp_eff >= 0.5 && p.esrh >= 150.0) || (p.stp_fixed >= 0.5 && p.srh1km >= 150.0))
         && p.mlpcl_bminus > -50.0
         && p.ebotm == 0.0
     {
@@ -262,16 +254,11 @@ pub fn possible_watch(p: &WatchParams) -> Vec<WatchType> {
     // -----------------------------------------------------------------------
     if (p.stp_fixed >= 1.0 || p.scp >= 4.0 || p.stp_eff >= 1.0) && p.mupcl_bminus >= -50.0 {
         types.push(WatchType::Severe);
-    } else if p.scp >= 2.0
-        && (p.ship >= 1.0 || p.dcape >= 750.0)
-        && p.mupcl_bminus >= -50.0
-    {
+    } else if p.scp >= 2.0 && (p.ship >= 1.0 || p.dcape >= 750.0) && p.mupcl_bminus >= -50.0 {
         types.push(WatchType::Severe);
     } else if p.sig_severe >= 30000.0 && p.mmp >= 0.6 && p.mupcl_bminus >= -50.0 {
         types.push(WatchType::Severe);
-    } else if p.mupcl_bminus >= -75.0
-        && (p.wndg >= 0.5 || p.ship >= 0.5 || p.scp >= 0.5)
-    {
+    } else if p.mupcl_bminus >= -75.0 && (p.wndg >= 0.5 || p.ship >= 0.5 || p.scp >= 0.5) {
         types.push(WatchType::MarginalSevere);
     }
 
@@ -768,15 +755,13 @@ mod tests {
 
     #[test]
     fn best_guess_freezing_rain_drizzle() {
-        let result =
-            best_guess_precip(PrecipPhase::FreezingOrMix, -3.0, 1500.0, 0.0, 0.0, -2.0);
+        let result = best_guess_precip(PrecipPhase::FreezingOrMix, -3.0, 1500.0, 0.0, 0.0, -2.0);
         assert_eq!(result, "Freezing Rain/Drizzle.");
     }
 
     #[test]
     fn best_guess_sleet_high_source() {
-        let result =
-            best_guess_precip(PrecipPhase::FreezingOrMix, -6.0, 4000.0, 0.0, 0.0, -2.0);
+        let result = best_guess_precip(PrecipPhase::FreezingOrMix, -6.0, 4000.0, 0.0, 0.0, -2.0);
         assert_eq!(result, "Sleet and Snow.");
     }
 

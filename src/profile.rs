@@ -32,7 +32,11 @@ pub fn is_valid(v: f64) -> bool {
 /// non-finite).
 #[inline]
 pub fn mask_missing(v: f64) -> f64 {
-    if is_valid(v) { v } else { f64::NAN }
+    if is_valid(v) {
+        v
+    } else {
+        f64::NAN
+    }
 }
 
 /// Find the index of the first non-NAN element, or `None`.
@@ -187,7 +191,7 @@ pub fn thetae(pres: f64, tmpc: f64, dwpc: f64) -> f64 {
     }
     let tk = ctok(tmpc);
     let w = mixratio(pres, dwpc) / 1000.0; // kg/kg
-    // LCL temperature (Bolton 1980 Eq. 15)
+                                           // LCL temperature (Bolton 1980 Eq. 15)
     let e = sat_vapor_pressure(dwpc);
     if e <= 0.0 {
         return f64::NAN;
@@ -447,8 +451,16 @@ impl Profile {
         // Sort levels by descending pressure (surface first).
         let mut indices: Vec<usize> = (0..n).collect();
         indices.sort_by(|&a, &b| {
-            let pa = if pres_v[a].is_nan() { f64::NEG_INFINITY } else { pres_v[a] };
-            let pb = if pres_v[b].is_nan() { f64::NEG_INFINITY } else { pres_v[b] };
+            let pa = if pres_v[a].is_nan() {
+                f64::NEG_INFINITY
+            } else {
+                pres_v[a]
+            };
+            let pb = if pres_v[b].is_nan() {
+                f64::NEG_INFINITY
+            } else {
+                pres_v[b]
+            };
             pb.partial_cmp(&pa).unwrap_or(std::cmp::Ordering::Equal)
         });
 
@@ -466,7 +478,11 @@ impl Profile {
         reorder(&mut omeg_v);
 
         // Check for reasonable pressure range.
-        let max_pres = pres_v.iter().copied().filter(|v| v.is_finite()).fold(f64::NEG_INFINITY, f64::max);
+        let max_pres = pres_v
+            .iter()
+            .copied()
+            .filter(|v| v.is_finite())
+            .fold(f64::NEG_INFINITY, f64::max);
         if max_pres <= 100.0 {
             return Err(ProfileError::PressureTooLow);
         }
@@ -485,36 +501,53 @@ impl Profile {
         }
 
         // Derived fields.
-        let logp: Vec<f64> = pres_v.iter().map(|&p| {
-            if p.is_finite() && p > 0.0 { p.log10() } else { f64::NAN }
-        }).collect();
+        let logp: Vec<f64> = pres_v
+            .iter()
+            .map(|&p| {
+                if p.is_finite() && p > 0.0 {
+                    p.log10()
+                } else {
+                    f64::NAN
+                }
+            })
+            .collect();
 
-        let vtmp_v: Vec<f64> = (0..n).map(|i| {
-            let vt = virtemp(pres_v[i], tmpc_v[i], dwpc_v[i]);
-            // Fall back to dry temperature if dewpoint is missing.
-            if vt.is_nan() && tmpc_v[i].is_finite() { tmpc_v[i] } else { vt }
-        }).collect();
+        let vtmp_v: Vec<f64> = (0..n)
+            .map(|i| {
+                let vt = virtemp(pres_v[i], tmpc_v[i], dwpc_v[i]);
+                // Fall back to dry temperature if dewpoint is missing.
+                if vt.is_nan() && tmpc_v[i].is_finite() {
+                    tmpc_v[i]
+                } else {
+                    vt
+                }
+            })
+            .collect();
 
-        let theta_v: Vec<f64> = (0..n).map(|i| {
-            let th = theta(pres_v[i], tmpc_v[i]);
-            if th.is_finite() { ctok(th) } else { f64::NAN }
-        }).collect();
+        let theta_v: Vec<f64> = (0..n)
+            .map(|i| {
+                let th = theta(pres_v[i], tmpc_v[i]);
+                if th.is_finite() {
+                    ctok(th)
+                } else {
+                    f64::NAN
+                }
+            })
+            .collect();
 
-        let thetae_v: Vec<f64> = (0..n).map(|i| {
-            thetae(pres_v[i], tmpc_v[i], dwpc_v[i])
-        }).collect();
+        let thetae_v: Vec<f64> = (0..n)
+            .map(|i| thetae(pres_v[i], tmpc_v[i], dwpc_v[i]))
+            .collect();
 
-        let wvmr_v: Vec<f64> = (0..n).map(|i| {
-            mixratio(pres_v[i], dwpc_v[i])
-        }).collect();
+        let wvmr_v: Vec<f64> = (0..n).map(|i| mixratio(pres_v[i], dwpc_v[i])).collect();
 
-        let relh_v: Vec<f64> = (0..n).map(|i| {
-            relh(pres_v[i], tmpc_v[i], dwpc_v[i])
-        }).collect();
+        let relh_v: Vec<f64> = (0..n)
+            .map(|i| relh(pres_v[i], tmpc_v[i], dwpc_v[i]))
+            .collect();
 
-        let wetbulb_v: Vec<f64> = (0..n).map(|i| {
-            wetbulb(pres_v[i], tmpc_v[i], dwpc_v[i])
-        }).collect();
+        let wetbulb_v: Vec<f64> = (0..n)
+            .map(|i| wetbulb(pres_v[i], tmpc_v[i], dwpc_v[i]))
+            .collect();
 
         Ok(Self {
             pres: pres_v,
@@ -690,7 +723,8 @@ impl Profile {
             if !h0.is_finite() || !h1.is_finite() || !p0.is_finite() || !p1.is_finite() {
                 continue;
             }
-            if (target_hght >= h0 && target_hght <= h1) || (target_hght <= h0 && target_hght >= h1) {
+            if (target_hght >= h0 && target_hght <= h1) || (target_hght <= h0 && target_hght >= h1)
+            {
                 let dh = h1 - h0;
                 if dh.abs() < TOL {
                     return p0;
@@ -881,7 +915,12 @@ impl Profile {
             }
             if trimmed.contains("Station elevation:") || trimmed.contains("Station elevation :") {
                 if let Some(val) = trimmed.split(':').nth(1) {
-                    station.elevation = val.trim().trim_end_matches('m').trim().parse().unwrap_or(f64::NAN);
+                    station.elevation = val
+                        .trim()
+                        .trim_end_matches('m')
+                        .trim()
+                        .parse()
+                        .unwrap_or(f64::NAN);
                 }
             }
             if trimmed.contains("Observation time:") || trimmed.contains("Observation time :") {
@@ -933,7 +972,8 @@ impl Profile {
         let mut wspd = Vec::new();
         let mut omeg = Vec::new();
 
-        let mut header_indices: Option<(usize, usize, usize, usize, usize, usize, Option<usize>)> = None;
+        let mut header_indices: Option<(usize, usize, usize, usize, usize, usize, Option<usize>)> =
+            None;
 
         for line in text.lines() {
             let trimmed = line.trim();
@@ -947,20 +987,35 @@ impl Profile {
             if header_indices.is_none() {
                 let lower: Vec<String> = cols.iter().map(|s| s.to_lowercase()).collect();
                 let find = |name: &str| lower.iter().position(|s| s == name);
-                if let (Some(ip), Some(ih), Some(it), Some(id), Some(iwd), Some(iws)) =
-                    (find("pres"), find("hght"), find("tmpc"), find("dwpc"), find("wdir"), find("wspd"))
-                {
+                if let (Some(ip), Some(ih), Some(it), Some(id), Some(iwd), Some(iws)) = (
+                    find("pres"),
+                    find("hght"),
+                    find("tmpc"),
+                    find("dwpc"),
+                    find("wdir"),
+                    find("wspd"),
+                ) {
                     let io = find("omeg");
                     header_indices = Some((ip, ih, it, id, iwd, iws, io));
                     continue;
                 }
                 // If no header detected, assume default order.
-                header_indices = Some((0, 1, 2, 3, 4, 5, if cols.len() > 6 { Some(6) } else { None }));
+                header_indices = Some((
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    if cols.len() > 6 { Some(6) } else { None },
+                ));
             }
 
             let (ip, ih, it, id, iwd, iws, io) = header_indices.unwrap();
             let parse = |idx: usize| -> f64 {
-                cols.get(idx).and_then(|s| s.parse::<f64>().ok()).unwrap_or(f64::NAN)
+                cols.get(idx)
+                    .and_then(|s| s.parse::<f64>().ok())
+                    .unwrap_or(f64::NAN)
             };
 
             pres.push(parse(ip));
@@ -980,8 +1035,21 @@ impl Profile {
             ));
         }
 
-        let omeg_slice = if omeg.len() == pres.len() { &omeg[..] } else { &[] };
-        Profile::new(&pres, &hght, &tmpc, &dwpc, &wdir, &wspd, omeg_slice, StationInfo::default())
+        let omeg_slice = if omeg.len() == pres.len() {
+            &omeg[..]
+        } else {
+            &[]
+        };
+        Profile::new(
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &wdir,
+            &wspd,
+            omeg_slice,
+            StationInfo::default(),
+        )
     }
 
     /// Serialize the profile to SHARPpy `%RAW%` text format.
@@ -997,7 +1065,13 @@ impl Profile {
         out.push_str("%RAW%\n");
 
         for i in 0..self.num_levels() {
-            let qc = |v: f64| -> f64 { if v.is_finite() { v } else { MISSING } };
+            let qc = |v: f64| -> f64 {
+                if v.is_finite() {
+                    v
+                } else {
+                    MISSING
+                }
+            };
             out.push_str(&format!(
                 "{:>8.2},  {:>8.2},  {:>8.2},  {:>8.2},  {:>8.2},  {:>8.2}\n",
                 qc(self.pres[i]),
@@ -1050,8 +1124,17 @@ mod tests {
         let wdir = [180.0, 200.0, 220.0, 250.0, 270.0];
         let wspd = [10.0, 15.0, 20.0, 30.0, 50.0];
 
-        Profile::new(&pres, &hght, &tmpc, &dwpc, &wdir, &wspd, &[], StationInfo::default())
-            .expect("test sounding should be valid")
+        Profile::new(
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &wdir,
+            &wspd,
+            &[],
+            StationInfo::default(),
+        )
+        .expect("test sounding should be valid")
     }
 
     #[test]
@@ -1066,7 +1149,16 @@ mod tests {
 
     #[test]
     fn rejects_too_short() {
-        let res = Profile::new(&[1000.0], &[100.0], &[20.0], &[10.0], &[], &[], &[], StationInfo::default());
+        let res = Profile::new(
+            &[1000.0],
+            &[100.0],
+            &[20.0],
+            &[10.0],
+            &[],
+            &[],
+            &[],
+            StationInfo::default(),
+        );
         assert!(res.is_err());
     }
 
@@ -1077,7 +1169,9 @@ mod tests {
             &[100.0, 5600.0, 999.0],
             &[20.0, -10.0],
             &[10.0, -20.0],
-            &[], &[], &[],
+            &[],
+            &[],
+            &[],
             StationInfo::default(),
         );
         assert!(res.is_err());
@@ -1093,7 +1187,17 @@ mod tests {
         let wdir = [270.0, 250.0, 220.0, 200.0, 180.0];
         let wspd = [50.0, 30.0, 20.0, 15.0, 10.0];
 
-        let prof = Profile::new(&pres, &hght, &tmpc, &dwpc, &wdir, &wspd, &[], StationInfo::default()).unwrap();
+        let prof = Profile::new(
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &wdir,
+            &wspd,
+            &[],
+            StationInfo::default(),
+        )
+        .unwrap();
         // After sorting, surface (highest pressure) should be first.
         assert!((prof.pres[0] - 1000.0).abs() < TOL);
         assert!((prof.tmpc[0] - 30.0).abs() < TOL);
@@ -1105,7 +1209,17 @@ mod tests {
         let hght = [100.0, 1500.0, 5600.0];
         let tmpc = [30.0, MISSING, -15.0];
         let dwpc = [22.0, 12.0, MISSING];
-        let prof = Profile::new(&pres, &hght, &tmpc, &dwpc, &[], &[], &[], StationInfo::default()).unwrap();
+        let prof = Profile::new(
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &[],
+            &[],
+            &[],
+            StationInfo::default(),
+        )
+        .unwrap();
         assert!(prof.tmpc[1].is_nan()); // level at 850
         assert!(prof.dwpc[2].is_nan()); // level at 500
     }
@@ -1192,7 +1306,17 @@ mod tests {
         let u = [-5.0, -10.0, -25.0];
         let v = [-8.66, -12.0, 0.0];
 
-        let prof = Profile::from_uv(&pres, &hght, &tmpc, &dwpc, &u, &v, &[], StationInfo::default()).unwrap();
+        let prof = Profile::from_uv(
+            &pres,
+            &hght,
+            &tmpc,
+            &dwpc,
+            &u,
+            &v,
+            &[],
+            StationInfo::default(),
+        )
+        .unwrap();
         // Wind speed at first level: sqrt(25+75) = 10
         assert!((prof.wspd[0] - 10.0).abs() < 0.1);
     }

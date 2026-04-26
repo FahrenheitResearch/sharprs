@@ -9,7 +9,7 @@ fn main() {
         "tests/soundings/JAX_20250402_00Z.csv",
         "tests/soundings/MPX_20250402_00Z.csv",
     ];
-    
+
     for path in &files {
         if let Ok(contents) = fs::read_to_string(path) {
             println!("=== {} ===", path);

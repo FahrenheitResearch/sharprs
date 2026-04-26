@@ -118,9 +118,7 @@ pub fn mixratio(p: f64, t: f64) -> f64 {
 /// ```
 pub fn temp_at_mixrat(w: f64, p: f64) -> f64 {
     let x = (w * p / (622.0 + w)).log10();
-    10.0_f64.powf(C1 * x + C2) - C3
-        + C4 * (10.0_f64.powf(C5 * x) - C6).powi(2)
-        - ZEROCNK
+    10.0_f64.powf(C1 * x + C2) - C3 + C4 * (10.0_f64.powf(C5 * x) - C6).powi(2) - ZEROCNK
 }
 
 /// Temperature (C) from vapor pressure (hPa) via Clausius-Clapeyron inversion.
@@ -272,15 +270,13 @@ pub fn wobf(t: f64) -> f64 {
         let npol = 1.0
             + t * (-8.841660499999999e-3
                 + t * (1.4714143e-4
-                    + t * (-9.671989000000001e-7
-                        + t * (-3.2607217e-8 + t * (-3.8598073e-10)))));
+                    + t * (-9.671989000000001e-7 + t * (-3.2607217e-8 + t * (-3.8598073e-10)))));
         15.13 / npol.powi(4)
     } else {
         let ppol = t
             * (4.9618922e-07
                 + t * (-6.1059365e-09
-                    + t * (3.9401551e-11
-                        + t * (-1.2588129e-13 + t * (1.6688280e-16)))));
+                    + t * (3.9401551e-11 + t * (-1.2588129e-13 + t * (1.6688280e-16)))));
         let ppol = 1.0 + t * (3.6182989e-03 + t * (-1.3603273e-05 + ppol));
         (29.93 / ppol.powi(4)) + (0.96 * t) - 14.8
     }
@@ -363,29 +359,17 @@ pub fn wetbulb(p: f64, t: f64, td: f64) -> f64 {
 // =========================================================================
 
 /// Lift a parcel, propagating `None` for any missing input.
-pub fn drylift_opt(
-    p: Option<f64>,
-    t: Option<f64>,
-    td: Option<f64>,
-) -> Option<(f64, f64)> {
+pub fn drylift_opt(p: Option<f64>, t: Option<f64>, td: Option<f64>) -> Option<(f64, f64)> {
     Some(drylift(p?, t?, td?))
 }
 
 /// Wet-bulb temperature, propagating `None`.
-pub fn wetbulb_opt(
-    p: Option<f64>,
-    t: Option<f64>,
-    td: Option<f64>,
-) -> Option<f64> {
+pub fn wetbulb_opt(p: Option<f64>, t: Option<f64>, td: Option<f64>) -> Option<f64> {
     Some(wetbulb(p?, t?, td?))
 }
 
 /// Virtual temperature, propagating `None` for p and t (td may be None).
-pub fn virtemp_opt(
-    p: Option<f64>,
-    t: Option<f64>,
-    td: Option<f64>,
-) -> Option<f64> {
+pub fn virtemp_opt(p: Option<f64>, t: Option<f64>, td: Option<f64>) -> Option<f64> {
     Some(virtemp(p?, t?, td))
 }
 
@@ -395,20 +379,12 @@ pub fn theta_opt(p: Option<f64>, t: Option<f64>, p2: f64) -> Option<f64> {
 }
 
 /// Equivalent potential temperature, propagating `None`.
-pub fn thetae_opt(
-    p: Option<f64>,
-    t: Option<f64>,
-    td: Option<f64>,
-) -> Option<f64> {
+pub fn thetae_opt(p: Option<f64>, t: Option<f64>, td: Option<f64>) -> Option<f64> {
     Some(thetae(p?, t?, td?))
 }
 
 /// Wet-bulb potential temperature, propagating `None`.
-pub fn thetaw_opt(
-    p: Option<f64>,
-    t: Option<f64>,
-    td: Option<f64>,
-) -> Option<f64> {
+pub fn thetaw_opt(p: Option<f64>, t: Option<f64>, td: Option<f64>) -> Option<f64> {
     Some(thetaw(p?, t?, td?))
 }
 
@@ -438,11 +414,7 @@ pub fn lifted_opt(
 }
 
 /// Wetlift, propagating `None`.
-pub fn wetlift_opt(
-    p: Option<f64>,
-    t: Option<f64>,
-    p2: Option<f64>,
-) -> Option<f64> {
+pub fn wetlift_opt(p: Option<f64>, t: Option<f64>, p2: Option<f64>) -> Option<f64> {
     Some(wetlift(p?, t?, p2?))
 }
 
@@ -457,10 +429,7 @@ mod tests {
     /// Helper: assert two f64 values are within `eps` of each other.
     fn assert_close(a: f64, b: f64, eps: f64, msg: &str) {
         let diff = (a - b).abs();
-        assert!(
-            diff < eps,
-            "{msg}: {a} vs {b}, diff={diff}, eps={eps}"
-        );
+        assert!(diff < eps, "{msg}: {a} vs {b}, diff={diff}, eps={eps}");
     }
 
     // ---------------------------------------------------------------
@@ -566,7 +535,12 @@ mod tests {
         assert!(vt > 20.0, "virtemp should exceed t for moist air");
         assert_close(vt, 22.625, 0.1, "virtemp(1000,20,20)");
         // Missing dewpoint
-        assert_close(virtemp(1000.0, 20.0, None), 20.0, 1e-10, "virtemp missing td");
+        assert_close(
+            virtemp(1000.0, 20.0, None),
+            20.0,
+            1e-10,
+            "virtemp missing td",
+        );
     }
 
     // ---------------------------------------------------------------
@@ -693,7 +667,12 @@ mod tests {
         let wb = wetbulb(1000.0, 30.0, 15.0);
         assert!(wb > 15.0 && wb < 30.0, "wetbulb(1000,30,15) = {wb}");
         // Specific value
-        assert_close(wetbulb(1000.0, 25.0, 15.0), 18.6, 0.5, "wetbulb(1000,25,15)");
+        assert_close(
+            wetbulb(1000.0, 25.0, 15.0),
+            18.6,
+            0.5,
+            "wetbulb(1000,25,15)",
+        );
     }
 
     #[test]
@@ -803,80 +782,155 @@ mod tests {
 
     #[test]
     fn xval_vappres() {
-        assert_close(vappres(0.0),   6.107954896017587,  1e-10, "xval vappres(0)");
-        assert_close(vappres(25.0), 31.670078513287617,  1e-10, "xval vappres(25)");
-        assert_close(vappres(-10.0), 2.862720771104215,  1e-10, "xval vappres(-10)");
+        assert_close(vappres(0.0), 6.107954896017587, 1e-10, "xval vappres(0)");
+        assert_close(vappres(25.0), 31.670078513287617, 1e-10, "xval vappres(25)");
+        assert_close(
+            vappres(-10.0),
+            2.862720771104215,
+            1e-10,
+            "xval vappres(-10)",
+        );
     }
 
     #[test]
     fn xval_mixratio() {
-        assert_close(mixratio(1000.0, 20.0), 14.955321833573537, 1e-10, "xval mixratio(1000,20)");
-        assert_close(mixratio(1000.0, 15.0), 10.834359059077558, 1e-10, "xval mixratio(1000,15)");
+        assert_close(
+            mixratio(1000.0, 20.0),
+            14.955321833573537,
+            1e-10,
+            "xval mixratio(1000,20)",
+        );
+        assert_close(
+            mixratio(1000.0, 15.0),
+            10.834359059077558,
+            1e-10,
+            "xval mixratio(1000,15)",
+        );
     }
 
     #[test]
     fn xval_theta() {
-        assert_close(theta(850.0, 10.0, 1000.0),  23.457812111895066, 1e-10, "xval theta(850,10)");
-        assert_close(theta(500.0, -10.0, 1000.0), 47.633437386332787, 1e-10, "xval theta(500,-10)");
+        assert_close(
+            theta(850.0, 10.0, 1000.0),
+            23.457812111895066,
+            1e-10,
+            "xval theta(850,10)",
+        );
+        assert_close(
+            theta(500.0, -10.0, 1000.0),
+            47.633437386332787,
+            1e-10,
+            "xval theta(500,-10)",
+        );
     }
 
     #[test]
     fn xval_wobf() {
-        assert_close(wobf(20.0),  15.130000000000001,  1e-10, "xval wobf(20)");
-        assert_close(wobf(-20.0),  2.268446379039877,  1e-10, "xval wobf(-20)");
-        assert_close(wobf(40.0),  27.230425856811724,  1e-10, "xval wobf(40)");
+        assert_close(wobf(20.0), 15.130000000000001, 1e-10, "xval wobf(20)");
+        assert_close(wobf(-20.0), 2.268446379039877, 1e-10, "xval wobf(-20)");
+        assert_close(wobf(40.0), 27.230425856811724, 1e-10, "xval wobf(40)");
     }
 
     #[test]
     fn xval_lcltemp() {
-        assert_close(lcltemp(30.0, 20.0), 17.654470000000000, 1e-10, "xval lcltemp(30,20)");
+        assert_close(
+            lcltemp(30.0, 20.0),
+            17.654470000000000,
+            1e-10,
+            "xval lcltemp(30,20)",
+        );
     }
 
     #[test]
     fn xval_drylift() {
         let (p, t) = drylift(1000.0, 30.0, 20.0);
         assert_close(p, 864.574182648404303, 1e-8, "xval drylift p");
-        assert_close(t, 17.654470000000000,  1e-10, "xval drylift t");
+        assert_close(t, 17.654470000000000, 1e-10, "xval drylift t");
     }
 
     #[test]
     fn xval_wetlift() {
-        assert_close(wetlift(850.0, 10.0, 700.0), 1.792703825115132, 1e-8, "xval wetlift");
+        assert_close(
+            wetlift(850.0, 10.0, 700.0),
+            1.792703825115132,
+            1e-8,
+            "xval wetlift",
+        );
     }
 
     #[test]
     fn xval_lifted() {
-        assert_close(lifted(1000.0, 30.0, 20.0, 500.0), -3.428511862540861, 1e-8, "xval lifted");
+        assert_close(
+            lifted(1000.0, 30.0, 20.0, 500.0),
+            -3.428511862540861,
+            1e-8,
+            "xval lifted",
+        );
     }
 
     #[test]
     fn xval_wetbulb() {
-        assert_close(wetbulb(1000.0, 25.0, 15.0), 18.545800905204654, 1e-8, "xval wetbulb");
+        assert_close(
+            wetbulb(1000.0, 25.0, 15.0),
+            18.545800905204654,
+            1e-8,
+            "xval wetbulb",
+        );
     }
 
     #[test]
     fn xval_thetaw() {
-        assert_close(thetaw(850.0, 10.0, 5.0), 14.175166637188527, 1e-8, "xval thetaw");
+        assert_close(
+            thetaw(850.0, 10.0, 5.0),
+            14.175166637188527,
+            1e-8,
+            "xval thetaw",
+        );
     }
 
     #[test]
     fn xval_thetae() {
-        assert_close(thetae(1000.0, 30.0, 20.0), 76.777259652772216, 1e-8, "xval thetae(30,20)");
-        assert_close(thetae(1000.0, 25.0, 15.0), 58.894960198293631, 1e-8, "xval thetae(25,15)");
+        assert_close(
+            thetae(1000.0, 30.0, 20.0),
+            76.777259652772216,
+            1e-8,
+            "xval thetae(30,20)",
+        );
+        assert_close(
+            thetae(1000.0, 25.0, 15.0),
+            58.894960198293631,
+            1e-8,
+            "xval thetae(25,15)",
+        );
     }
 
     #[test]
     fn xval_virtemp() {
-        assert_close(virtemp(1000.0, 20.0, Some(20.0)), 22.625400511641203, 1e-10, "xval virtemp");
+        assert_close(
+            virtemp(1000.0, 20.0, Some(20.0)),
+            22.625400511641203,
+            1e-10,
+            "xval virtemp",
+        );
     }
 
     #[test]
     fn xval_relh() {
-        assert_close(relh(1000.0, 30.0, 10.0), 28.923793739840995, 1e-10, "xval relh");
+        assert_close(
+            relh(1000.0, 30.0, 10.0),
+            28.923793739840995,
+            1e-10,
+            "xval relh",
+        );
     }
 
     #[test]
     fn xval_temp_at_mixrat() {
-        assert_close(temp_at_mixrat(14.0, 1000.0), 19.077251998769270, 1e-10, "xval temp_at_mixrat");
+        assert_close(
+            temp_at_mixrat(14.0, 1000.0),
+            19.077251998769270,
+            1e-10,
+            "xval temp_at_mixrat",
+        );
     }
 }
