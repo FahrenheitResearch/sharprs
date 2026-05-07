@@ -630,7 +630,7 @@ pub fn draw_storm_slinky(
         let ly = leg_y + i as i32 * legend_line_h;
         // Larger color swatch (filled circle to match dots)
         canvas.fill_circle(leg_x + 8, ly + 8, 5, *col);
-        canvas.draw_text_scaled(label, leg_x + 22, ly, COL_TEXT, 2);
+        canvas.draw_text_scaled(label, leg_x + 22, ly + 2, COL_TEXT, 1);
     }
 }
 
