@@ -969,7 +969,7 @@ pub fn draw_all_panels(
     rw: i32,
     rh: i32,
 ) {
-    // Archive soundings prioritize readable diagnostics over the original
+    // The modern layout prioritizes readable diagnostics over the original
     // small multi-panel stack. SARS/STP/watch text is still available in the
     // parameter table; the lower-right area is reserved for a usable slinky.
     draw_storm_slinky(canvas, slinky_points, slinky_tilt_deg, rx, ry, rw, rh);
