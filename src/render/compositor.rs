@@ -575,7 +575,7 @@ fn build_param_table(profile: &Profile, p: &ComputedParams) -> ParamTableData {
         shear_row("1km-3km", p1km, p3km, 1000.0, 3000.0),
         shear_row("3km-6km", p3km, p6km, 3000.0, 6000.0),
         shear_row("SFC-6km", p_sfc, p6km, 0.0, 6000.0),
-        shear_row("C 0-2km", p_sfc, p2km, 0.0, 2000.0),
+        shear_row("SFC-2km", p_sfc, p2km, 0.0, 2000.0),
     ];
     let lr03_table = p
         .lr03
