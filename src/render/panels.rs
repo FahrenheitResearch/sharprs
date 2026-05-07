@@ -543,7 +543,7 @@ pub fn draw_storm_slinky(
     }
 
     // Plot area
-    let plot_margin = 22;
+    let plot_margin = 28;
     let plot_top = sep_y + 8;
     let plot_size = (rw - 2 * plot_margin).min(rh - (plot_top - ry) - plot_margin - 8);
 
@@ -555,7 +555,7 @@ pub fn draw_storm_slinky(
         .iter()
         .map(|p| (p.sr_u * p.sr_u + p.sr_v * p.sr_v).sqrt())
         .fold(0.0_f64, f64::max)
-        .max(10.0); // minimum scale of 10 kt
+        .max(4.0);
 
     let scale = (plot_size as f64 / 2.0 - 8.0) / max_disp;
 
@@ -577,23 +577,27 @@ pub fn draw_storm_slinky(
         }
     }
 
+    let scale_text = format!("{:.0} kt radius", max_disp);
+    canvas.draw_text_scaled(&scale_text, rx + 12, plot_top + 4, COL_TEXT_DIM, 2);
+
     // Draw connecting lines between successive dots (brighter)
     for pair in points.windows(2) {
         let x0 = cx + (pair[0].sr_u * scale) as i32;
         let y0 = cy - (pair[0].sr_v * scale) as i32;
         let x1 = cx + (pair[1].sr_u * scale) as i32;
         let y1 = cy - (pair[1].sr_v * scale) as i32;
-        canvas.draw_line_aa(
+        canvas.draw_thick_line_aa(
             x0 as f64,
             y0 as f64,
             x1 as f64,
             y1 as f64,
             [120, 120, 150, 200],
+            2,
         );
     }
 
     // Draw dots — LARGER (radius 5) and BRIGHTER
-    let dot_radius: i32 = 5;
+    let dot_radius: i32 = 7;
     for pt in points {
         let px = cx + (pt.sr_u * scale) as i32;
         let py_pt = cy - (pt.sr_v * scale) as i32;
@@ -607,15 +611,15 @@ pub fn draw_storm_slinky(
     // Degree label (tilt angle) — prominent if provided
     if let Some(deg) = tilt_deg {
         let deg_text = format!("{:.0} deg", deg);
-        let dtw = Canvas::text_width(&deg_text);
+        let dtw = Canvas::text_width_scaled(&deg_text, 2);
         // Draw at top-right of plot area
-        canvas.draw_text(&deg_text, rx + rw - dtw - 8, plot_top + 2, COL_WHITE);
-        canvas.draw_text(&deg_text, rx + rw - dtw - 7, plot_top + 2, COL_WHITE);
+        canvas.draw_text_scaled(&deg_text, rx + rw - dtw - 12, plot_top + 4, COL_WHITE, 2);
     }
 
     // Height-band legend (bottom-left)
     let leg_x = rx + 6;
-    let leg_y = ry + rh - 4 * LINE_H - 6;
+    let legend_line_h = 24;
+    let leg_y = ry + rh - 4 * legend_line_h - 10;
     let bands: &[(&str, [u8; 4])] = &[
         ("0-3km", COL_SLINKY_LOW),
         ("3-6km", COL_SLINKY_MID),
@@ -623,10 +627,10 @@ pub fn draw_storm_slinky(
         ("9+km", COL_SLINKY_UPPER),
     ];
     for (i, (label, col)) in bands.iter().enumerate() {
-        let ly = leg_y + i as i32 * LINE_H;
+        let ly = leg_y + i as i32 * legend_line_h;
         // Larger color swatch (filled circle to match dots)
-        canvas.fill_circle(leg_x + 4, ly + 5, 3, *col);
-        canvas.draw_text(label, leg_x + 12, ly, COL_TEXT);
+        canvas.fill_circle(leg_x + 8, ly + 8, 5, *col);
+        canvas.draw_text_scaled(label, leg_x + 22, ly, COL_TEXT, 2);
     }
 }
 
@@ -952,43 +956,23 @@ fn draw_panel_border(canvas: &mut Canvas, rx: i32, ry: i32, rw: i32, rh: i32) {
 /// total height.
 pub fn draw_all_panels(
     canvas: &mut Canvas,
-    sars: &SarsData,
-    climo: &StpClimatology,
-    current_stp: f64,
-    stp_probs: Option<&StpProbabilities>,
+    _sars: &SarsData,
+    _climo: &StpClimatology,
+    _current_stp: f64,
+    _stp_probs: Option<&StpProbabilities>,
     slinky_points: &[SlinkyPoint],
     slinky_tilt_deg: Option<f64>,
-    hazard: WatchType,
-    temp_advection: &[TempAdvectionLevel],
+    _hazard: WatchType,
+    _temp_advection: &[TempAdvectionLevel],
     rx: i32,
     ry: i32,
     rw: i32,
     rh: i32,
 ) {
-    // Allocate panel heights: SARS 20%, STP 29%, Slinky 21%, Hazard 16%, TempAdv 14%
-    let gap = 2;
-    let usable_h = rh - 4 * gap; // 4 gaps between 5 panels
-    let sars_h = (usable_h as f64 * 0.20) as i32;
-    let stp_h = (usable_h as f64 * 0.29) as i32;
-    let slinky_h = (usable_h as f64 * 0.21) as i32;
-    let hazard_h = (usable_h as f64 * 0.16) as i32;
-    let temp_adv_h = usable_h - sars_h - stp_h - slinky_h - hazard_h;
-
-    let mut y = ry;
-
-    draw_sars_panel(canvas, sars, rx, y, rw, sars_h);
-    y += sars_h + gap;
-
-    draw_stp_box_panel(canvas, climo, current_stp, stp_probs, rx, y, rw, stp_h);
-    y += stp_h + gap;
-
-    draw_storm_slinky(canvas, slinky_points, slinky_tilt_deg, rx, y, rw, slinky_h);
-    y += slinky_h + gap;
-
-    draw_hazard_type_panel(canvas, hazard, rx, y, rw, hazard_h);
-    y += hazard_h + gap;
-
-    draw_temp_advection_panel(canvas, temp_advection, rx, y, rw, temp_adv_h);
+    // Archive soundings prioritize readable diagnostics over the original
+    // small multi-panel stack. SARS/STP/watch text is still available in the
+    // parameter table; the lower-right area is reserved for a usable slinky.
+    draw_storm_slinky(canvas, slinky_points, slinky_tilt_deg, rx, ry, rw, rh);
 }
 
 // =========================================================================
